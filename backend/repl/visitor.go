@@ -384,7 +384,6 @@ func (v *ReplVisitor) VisitVector_type(ctx *compiler.Vector_typeContext) interfa
 func (v *ReplVisitor) VisitVectorItem(ctx *compiler.VectorItemContext) interface{} {
 
 	varName := ctx.Id_pattern().GetText()
-	fmt.Println("DEBUG: VisitVectorItem - Accediendo a variable:", varName)
 
 	variable := v.ScopeTrace.GetVariable(varName)
 	if variable == nil {
@@ -408,7 +407,6 @@ func (v *ReplVisitor) VisitVectorItem(ctx *compiler.VectorItemContext) interface
 		}
 		indexes = append(indexes, val.Value().(int))
 	}
-	fmt.Println("DEBUG: Índices evaluados:", indexes)
 	// Verificar si es acceso a vector (1D)
 	// Acceso con 1 índice
 	if len(indexes) == 1 {
@@ -421,8 +419,6 @@ func (v *ReplVisitor) VisitVectorItem(ctx *compiler.VectorItemContext) interface
 				v.ErrorTable.NewSemanticError(ctx.GetStart(), "Índice "+strconv.Itoa(index)+" fuera de rango")
 				return nil
 			}
-			valor := vectorValue.Get(index)
-			fmt.Printf("DEBUG: Retornando elemento del vector en posición [%d]: %v\n", index, valor)
 			return &VectorItemReference{
 				Vector: vectorValue,
 				Index:  index,
@@ -436,25 +432,31 @@ func (v *ReplVisitor) VisitVectorItem(ctx *compiler.VectorItemContext) interface
 				v.ErrorTable.NewSemanticError(ctx.GetStart(), "Fila "+strconv.Itoa(index)+" fuera de rango")
 				return nil
 			}
-			fila := matrixValue.Items[index]
-			fmt.Println("DEBUG: Accediendo a fila completa:", fila)
+			filaOriginal := matrixValue.Items[index]
 
-			// Crear el VectorValue de la fila
+			//  copia independiente
+			nuevaFila := make([]value.IVOR, 0, len(filaOriginal))
+
+			for _, item := range filaOriginal {
+				copia := item.Copy()
+				nuevaFila = append(nuevaFila, copia)
+			}
+
 			vectorValue := &VectorValue{
-				InternalValue: fila,
+				InternalValue: nuevaFila,
 				ItemType:      matrixValue.ItemType,
 				FullType:      "[]" + matrixValue.ItemType,
-				SizeValue:     &value.IntValue{InternalValue: len(fila)},
-				IsEmpty:       &value.BoolValue{InternalValue: len(fila) == 0},
+				SizeValue:     &value.IntValue{InternalValue: len(nuevaFila)},
+				IsEmpty:       &value.BoolValue{InternalValue: len(nuevaFila) == 0},
 			}
-			fmt.Printf("DEBUG: Retornando VectorValue: %+v\n", vectorValue)
+
 			return vectorValue
+
 		}
 
 		v.ErrorTable.NewSemanticError(ctx.GetStart(), "Acceso inválido con un solo índice a variable "+varName)
 		return nil
 	}
-
 	// Verificar si es acceso a matriz (2D)
 	if len(indexes) == 2 {
 		i, j := indexes[0], indexes[1]
@@ -895,6 +897,8 @@ func (v *ReplVisitor) VisitVectorItemExpr(ctx *compiler.VectorItemExprContext) i
 		return itemRef.Value
 	case *MatrixItemReference:
 		return itemRef.Value
+	case *VectorValue:
+		return itemRef
 	}
 	return value.DefaultNilValue
 }
