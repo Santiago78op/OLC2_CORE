@@ -1524,26 +1524,6 @@ body {
 }
 
 /* Error state para el AST */
-.ast-error {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    color: #e57373;
-    text-align: center;
-    padding: 40px;
-}
-
-.ast-error-icon {
-    font-size: 48px;
-    margin-bottom: 16px;
-}
-
-.ast-error p {
-    margin: 8px 0;
-}
-
 .ast-error .retry-btn {
     background: #007acc;
     color: white;
@@ -1551,12 +1531,49 @@ body {
     padding: 8px 16px;
     border-radius: 4px;
     cursor: pointer;
-    margin-top: 16px;
+    margin: 8px 4px;
     transition: background 0.2s;
+    display: inline-block;
 }
 
 .ast-error .retry-btn:hover {
     background: #1177bb;
+}
+
+/* Warning para ASTs grandes */
+.ast-warning {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #ffb74d;
+    text-align: center;
+    padding: 40px;
+    background: #1e1e1e;
+}
+
+.ast-warning-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+}
+
+.ast-warning p {
+    margin: 8px 0;
+    font-size: 16px;
+}
+
+.ast-warning small {
+    color: #8c8c8c;
+    font-size: 14px;
+}
+
+.ast-warning .action-buttons {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 /* Responsive para el AST */

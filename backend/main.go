@@ -38,7 +38,7 @@ type executionResult struct {
 func executeCode(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	// Leer y procesar el body (código existente)
+	// Leer y procesar el body
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
 		fmt.Printf("❌ Error leyendo body: %v\n", err)
@@ -81,15 +81,15 @@ func executeCode(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
 
 	// 1. Generar CST Report en paralelo
-	resultChannel := make(chan string, 1)
+	cstChannel := make(chan string, 1)
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
 				fmt.Println("Error generando CST Report:", r)
-				resultChannel <- ""
+				cstChannel <- ""
 			}
 		}()
-		resultChannel <- cst.CstReport(codeString)
+		cstChannel <- cst.CstReport(codeString)
 	}()
 
 	// 2. Análisis Léxico
@@ -111,7 +111,7 @@ func executeCode(w http.ResponseWriter, r *http.Request) {
 	// 4. Generar AST
 	tree := parser.Program()
 
-	// Verificar si hubo errores críticos que impiden continuar
+	// Verificar si hubo errores críticos
 	hasCompilationErrors := len(syntaxErrorListener.ErrorTable.Errors) > 0
 
 	fmt.Printf("🔹 Errores de compilación: %d\n", len(syntaxErrorListener.ErrorTable.Errors))
@@ -126,8 +126,7 @@ func executeCode(w http.ResponseWriter, r *http.Request) {
 	var formattedOutput string = ""
 	var consoleMessages []repl.ConsoleMessage
 
-	// 5. Solo continuar con análisis semántico si no hay errores críticos de sintaxis
-
+	// 5. Solo continuar con análisis semántico si no hay errores críticos
 	if !hasCompilationErrors {
 		// Análisis Semántico y Ejecución
 		dclVisitor := repl.NewDclVisitor(syntaxErrorListener.ErrorTable)
@@ -139,20 +138,56 @@ func executeCode(w http.ResponseWriter, r *http.Request) {
 		formattedOutput = replVisitor.Console.GetFormattedOutput()
 		consoleMessages = replVisitor.Console.GetMessages()
 	} else {
-		// Si hay errores de compilación, no ejecutar pero crear visitor básico para reportes
+		// Si hay errores de compilación, crear visitor básico para reportes
 		dclVisitor := repl.NewDclVisitor(syntaxErrorListener.ErrorTable)
 		replVisitor = repl.NewVisitor(dclVisitor)
-		output = "" // No hay salida si no se pudo compilar
+		output = ""
 	}
 
 	interpretationEndTime := time.Now()
 
 	// 6. Obtener CST Report
-	cstReport := <-resultChannel
+	cstReport := <-cstChannel
 
-	// Si no hay CST report, intentar generar uno básico
-	if cstReport == "" {
-		cstReport = generateBasicAST(tree)
+	// 7. Generar AST nativo
+	var finalAST string
+	if tree != nil && !hasCompilationErrors {
+		fmt.Println("🌳 Generando AST nativo...")
+
+		// Generar AST con timeout para evitar bloqueos
+		astChannel := make(chan string, 1)
+		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					fmt.Printf("❌ Error generando AST nativo: %v\n", r)
+					astChannel <- generateErrorAST("Error al generar AST")
+				}
+			}()
+
+			astNode := ast.GenerateNativeAST(tree)
+			if astNode != nil {
+				astChannel <- ast.GenerateASTSVG(astNode)
+			} else {
+				astChannel <- generateErrorAST("No se pudo generar el árbol")
+			}
+		}()
+
+		// Esperar con timeout
+		select {
+		case finalAST = <-astChannel:
+			fmt.Println("✅ AST nativo generado exitosamente")
+		case <-time.After(5 * time.Second):
+			fmt.Println("⏱️ Timeout generando AST")
+			finalAST = generateErrorAST("Timeout al generar AST")
+		}
+	} else {
+		fmt.Println("❌ No se pudo generar el árbol de análisis debido a errores")
+		finalAST = generateErrorAST("Error en análisis sintáctico")
+	}
+
+	// Si no hay CST report pero sí AST nativo, usar el AST nativo
+	if cstReport == "" && finalAST != "" {
+		cstReport = finalAST
 	}
 
 	reportEndTime := time.Now()
@@ -174,21 +209,6 @@ func executeCode(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("🔹 Tiempo total: %v\n", reportEndTime.Sub(startTime))
 	fmt.Printf("🔹 Salida: %s\n", output)
 
-	// Generar AST nativo
-	var finalAST string
-	if tree != nil {
-		fmt.Println("🌳 Generando AST nativo...")
-		astNode := ast.GenerateNativeAST(tree)
-		finalAST = ast.GenerateASTSVG(astNode)
-		fmt.Println("✅ AST nativo generado exitosamente")
-	} else {
-		fmt.Println("❌ No se pudo generar el árbol de análisis")
-		finalAST = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200">
-			<rect width="400" height="200" fill="#1e1e1e"/>
-			<text x="200" y="100" text-anchor="middle" fill="#ffffff">Error en análisis sintáctico</text>
-		</svg>`
-	}
-
 	// Crear resultado con información detallada
 	result := executionResult{
 		Success:         success,
@@ -196,8 +216,8 @@ func executeCode(w http.ResponseWriter, r *http.Request) {
 		Output:          output,
 		FormattedOutput: formattedOutput,
 		ConsoleMessages: consoleMessages,
-		CSTSvg:          finalAST,
-		AST:             finalAST,
+		CSTSvg:          cstReport, // CST del servicio externo
+		AST:             finalAST,  // AST nativo generado
 		Symbols:         symbols,
 		ScopeTrace:      scopeReport,
 		ErrorSummary:    errorSummary,
@@ -215,6 +235,19 @@ func executeCode(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("✅ Respuesta enviada exitosamente\n")
 }
 
+// Función auxiliar para generar AST de error
+func generateErrorAST(errorMsg string) string {
+	return fmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="200" viewBox="0 0 600 200">
+		<rect width="600" height="200" fill="#1e1e1e"/>
+		<text x="300" y="90" text-anchor="middle" fill="#ff6b6b" font-family="Arial" font-size="18">
+			⚠️ %s
+		</text>
+		<text x="300" y="120" text-anchor="middle" fill="#cccccc" font-family="Arial" font-size="14">
+			Verifica que el código tenga sintaxis válida
+		</text>
+	</svg>`, errorMsg)
+}
+
 // Función auxiliar para extraer símbolos del scope report
 func extractSymbolsFromScope(scopeReport repl.ReportTable) []repl.ReportSymbol {
 	var allSymbols []repl.ReportSymbol
@@ -224,7 +257,7 @@ func extractSymbolsFromScope(scopeReport repl.ReportTable) []repl.ReportSymbol {
 	extractFromScope = func(scope repl.ReportScope, scopeName string) {
 		// Agregar variables
 		for _, symbol := range scope.Vars {
-			symbol.Scope = scopeName // Asegurar que tenga el scope correcto
+			symbol.Scope = scopeName
 			allSymbols = append(allSymbols, symbol)
 		}
 
@@ -254,26 +287,21 @@ func extractSymbolsFromScope(scopeReport repl.ReportTable) []repl.ReportSymbol {
 // Función auxiliar para generar AST básico si falla el CST report
 func generateBasicAST(tree antlr.ParseTree) string {
 	if tree == nil {
-		return `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200">
-            <rect width="400" height="200" fill="#1e1e1e"/>
-            <text x="200" y="100" text-anchor="middle" fill="#ffffff" font-family="Arial" font-size="16">
-                No se pudo generar el AST
-            </text>
-        </svg>`
+		return generateErrorAST("No se pudo generar el AST")
 	}
 
 	// Generar un SVG básico con información del árbol
-	return fmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400">
-        <rect width="600" height="400" fill="#1e1e1e"/>
-        <circle cx="300" cy="100" r="40" fill="#007acc" stroke="#ffffff" stroke-width="2"/>
-        <text x="300" y="105" text-anchor="middle" fill="#ffffff" font-family="Arial" font-size="12">Program</text>
-        <text x="300" y="200" text-anchor="middle" fill="#cccccc" font-family="Arial" font-size="14">
-            AST generado exitosamente
-        </text>
-        <text x="300" y="220" text-anchor="middle" fill="#cccccc" font-family="Arial" font-size="12">
-            Texto del árbol: %s
-        </text>
-    </svg>`, tree.GetText()[:min(50, len(tree.GetText()))])
+	return fmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400">
+		<rect width="600" height="400" fill="#1e1e1e"/>
+		<circle cx="300" cy="100" r="40" fill="#007acc" stroke="#ffffff" stroke-width="2"/>
+		<text x="300" y="105" text-anchor="middle" fill="#ffffff" font-family="Arial" font-size="12">Program</text>
+		<text x="300" y="200" text-anchor="middle" fill="#cccccc" font-family="Arial" font-size="14">
+			AST generado exitosamente
+		</text>
+		<text x="300" y="220" text-anchor="middle" fill="#cccccc" font-family="Arial" font-size="12">
+			Texto del árbol: %s
+		</text>
+	</svg>`, tree.GetText()[:min(50, len(tree.GetText()))])
 }
 
 func min(a, b int) int {
@@ -311,9 +339,8 @@ func main() {
 	port := ":8080"
 	fmt.Printf("🚀 Servidor Go iniciado en http://localhost%s\n", port)
 	fmt.Println("📋 API endpoints disponibles:")
-	fmt.Println("  - GET    /api/status")  // Estado del servidor
-	fmt.Println("  - POST   /api/execute") // Ejecutar código
-	fmt.Println("  - GET    /api/reports") // Obtener reportes
+	fmt.Println("  - GET    /api/status")
+	fmt.Println("  - POST   /api/execute")
 
 	log.Fatal(http.ListenAndServe(port, handler))
 }

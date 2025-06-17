@@ -471,7 +471,7 @@ class ReportsManager {
             height: auto;
             min-height: 100%;
             display: flex;
-            justify-content: flex-start;
+            justify-content: center;
             align-items: flex-start;
             background: #1e1e1e;
             overflow: auto;
@@ -486,48 +486,26 @@ class ReportsManager {
         // Obtener el SVG y ajustarlo
         const svg = wrapper.querySelector('svg');
         if (svg) {
-            // Obtener dimensiones originales del SVG
-            const viewBox = svg.getAttribute('viewBox');
-            const width = svg.getAttribute('width');
-            const height = svg.getAttribute('height');
-            
-            console.log('📐 Dimensiones del SVG:', {
-                viewBox,
-                width,
-                height,
-                clientWidth: svg.clientWidth,
-                clientHeight: svg.clientHeight
-            });
-
-            // Configurar SVG para que se muestre completo
-            svg.style.cssText = `
-                display: block;
-                width: auto !important;
-                height: auto !important;
-                max-width: none !important;
-                max-height: none !important;
-                margin: 0;
-                border: 1px solid #3e3e42;
-                border-radius: 8px;
-                background: #1e1e1e;
-            `;
-
-            // Si no tiene viewBox, calcularlo basado en el contenido
-            if (!viewBox && svg.getBBox) {
+            // Esperar a que el SVG esté en el DOM para calcular el bbox
+            setTimeout(() => {
                 try {
+                    // Calcular el bounding box real del contenido
                     const bbox = svg.getBBox();
-                    const margin = 20;
-                    const calculatedViewBox = `${bbox.x - margin} ${bbox.y - margin} ${bbox.width + margin * 2} ${bbox.height + margin * 2}`;
-                    svg.setAttribute('viewBox', calculatedViewBox);
-                    console.log('📏 ViewBox calculado:', calculatedViewBox);
-                } catch (error) {
-                    console.warn('⚠️ No se pudo calcular viewBox:', error);
+                    const margin = 40; // margen extra para que no quede pegado
+                    const viewBox = `${bbox.x - margin} ${bbox.y - margin} ${bbox.width + margin * 2} ${bbox.height + margin * 2}`;
+                    svg.setAttribute('viewBox', viewBox);
+                    svg.setAttribute('width', bbox.width + margin * 2);
+                    svg.setAttribute('height', bbox.height + margin * 2);
+                    svg.style.width = '100%';
+                    svg.style.height = 'auto';
+                    svg.style.display = 'block';
+                    svg.style.margin = '0 auto';
+                    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+                } catch (e) {
+                    console.warn('No se pudo ajustar el viewBox del SVG:', e);
                 }
-            }
+            }, 0);
 
-            // Asegurar que el SVG preserve su aspect ratio
-            svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-            
             // Agregar indicador de zoom
             this.addZoomIndicator(wrapper);
             
@@ -546,7 +524,6 @@ class ReportsManager {
         // Forzar re-render después de un frame
         requestAnimationFrame(() => {
             if (svg) {
-                // Disparar evento de resize para asegurar renderizado correcto
                 window.dispatchEvent(new Event('resize'));
             }
         });
@@ -888,14 +865,39 @@ class ReportsManager {
         }
     }
 
+
     downloadASTSVG() {
-        if (!this.astData || !this.astData.includes('<svg')) {
-            alert('No hay SVG AST para descargar');
+        const container = document.getElementById('astVisualization');
+        const svg = container.querySelector('svg');
+        if (!svg) {
+            alert('No hay SVG para descargar');
             return;
         }
+        try {
+            // Clona el SVG para evitar modificar el original
+            const clonedSvg = svg.cloneNode(true);
 
-        const blob = new Blob([this.astData], { type: 'image/svg+xml' });
-        this.downloadBlob(blob, 'ast.svg');
+            // Opcional: inserta estilos CSS relevantes aquí si los necesitas
+
+            // Serializa el SVG correctamente
+            const serializer = new XMLSerializer();
+            let source = serializer.serializeToString(clonedSvg);
+
+            // Asegura que el SVG tenga el namespace correcto
+            if (!source.match(/^<svg[^>]+xmlns="http:\/\/www\.w3\.org\/2000\/svg"/)) {
+                source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+            }
+            // Opcional: agrega xmlns:xlink si usas xlink
+            if (!source.match(/^<svg[^>]+"http:\/\/www\.w3\.org\/1999\/xlink"/)) {
+                source = source.replace(/^<svg/, '<svg xmlns:xlink="http://www.w3.org/1999/xlink"');
+            }
+
+            // Descarga el archivo SVG
+            const blob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
+            this.downloadBlob(blob, 'ast-export.svg');
+        } catch (error) {
+            alert('Error al exportar el SVG');
+        }
     }
 
     downloadASTJSON() {
@@ -915,51 +917,83 @@ class ReportsManager {
         this.downloadBlob(blob, 'ast.json');
     }
 
+    
     downloadASTPNG() {
         const container = document.getElementById('astVisualization');
         const svg = container.querySelector('svg');
-        
         if (!svg) {
             alert('No hay SVG para convertir a PNG');
             return;
         }
-
         try {
-            // Crear canvas y convertir SVG a PNG
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const scale = 2; // Factor de escala para alta resolución
-            
+            // Clonar el SVG para no modificar el original
+            const clonedSvg = svg.cloneNode(true);
+
+            // Insertar estilos CSS relevantes dentro del SVG
+            let cssText = '';
+            // Extrae los estilos embebidos
+            document.querySelectorAll('style').forEach(styleNode => {
+                cssText += styleNode.innerHTML;
+            });
+            // Si tienes estilos externos, puedes agregarlos manualmente aquí:
+            // cssText += `.node { fill: #fff; stroke: #000; }` // Ejemplo
+
+            if (cssText) {
+                const styleElement = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+                styleElement.innerHTML = cssText;
+                clonedSvg.insertBefore(styleElement, clonedSvg.firstChild);
+            }
+
+            // Serializar el SVG clonado
+            const serializer = new XMLSerializer();
+            let svgString = serializer.serializeToString(clonedSvg);
+
+            // Asegura que el SVG tenga el namespace correcto
+            if (!svgString.match(/^<svg[^>]+xmlns="http:\/\/www\.w3\.org\/2000\/svg"/)) {
+                svgString = svgString.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+            }
+            if (!svgString.match(/^<svg[^>]+"http:\/\/www\.w3\.org\/1999\/xlink"/)) {
+                svgString = svgString.replace(/^<svg/, '<svg xmlns:xlink="http://www.w3.org/1999/xlink"');
+            }
+
+            // Crear imagen a partir del SVG serializado
+            const img = new window.Image();
+            const svgBase64 = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));
+
             // Obtener dimensiones del SVG
-            const svgRect = svg.getBoundingClientRect();
-            canvas.width = svgRect.width * scale;
-            canvas.height = svgRect.height * scale;
-            
-            // Serializar SVG
-            const data = new XMLSerializer().serializeToString(svg);
-            const img = new Image();
-            
+            const bbox = svg.getBBox();
+            const width = Math.ceil(bbox.width);
+            const height = Math.ceil(bbox.height);
+            const scale = 2; // Para alta resolución
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width * scale;
+            canvas.height = height * scale;
+            const ctx = canvas.getContext('2d');
+
             img.onload = () => {
-                // Fondo oscuro
-                ctx.fillStyle = '#1e1e1e';
+                // Fondo blanco
+                ctx.fillStyle = '#fff';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                // Escalar contexto
-                ctx.scale(scale, scale);
-                ctx.drawImage(img, 0, 0);
-                
-                // Descargar
-                canvas.toBlob((blob) => {
-                    this.downloadBlob(blob, 'ast-high-res.png');
+
+                // Dibuja la imagen SVG escalada
+                ctx.setTransform(scale, 0, 0, scale, 0, 0);
+                ctx.drawImage(img, -bbox.x, -bbox.y);
+
+                // Descargar como PNG
+                canvas.toBlob(blob => {
+                    this.downloadBlob(blob, 'ast-export.png');
                 });
             };
-            
-            img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(data)));
+            img.onerror = () => {
+                alert('Error al cargar la imagen SVG para exportar.');
+            };
+            img.src = svgBase64;
         } catch (error) {
-            console.error('Error exportando AST:', error);
-            alert('Error al exportar el AST');
+            alert('Error al exportar el AST como PNG');
         }
     }
+
 
     // ==================== UTILIDADES ====================
     downloadCSV(data, filename) {

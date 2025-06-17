@@ -168,6 +168,30 @@ class IDEController {
         }
     }
 
+    updateReports(data) {
+        if (!data) return;
+
+        // Mapear los datos del backend a la estructura esperada
+        this.currentReports = {
+            errors: data.errors || [],
+            symbols: data.symbols || data.symbolTable || [],
+            ast: data.ast || data.cstSvg || null,
+            cstSvg: data.cstSvg || null
+        };
+
+        console.log('📊 Reportes actualizados:', {
+            errores: this.currentReports.errors.length,
+            símbolos: this.currentReports.symbols.length,
+            tieneAST: !!this.currentReports.ast,
+            tieneCST: !!this.currentReports.cstSvg
+        });
+
+        // Si el modal está abierto, actualizar
+        if (document.getElementById('reportsModal').style.display !== 'none') {
+            this.updateAllReports();
+        }
+    }
+
     displayProgramOutput(result) {
         // Priorizar mensajes estructurados si están disponibles
         if (result.consoleMessages && result.consoleMessages.length > 0) {
