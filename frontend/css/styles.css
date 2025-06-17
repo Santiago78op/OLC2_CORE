@@ -1,3 +1,6 @@
+/* ========================================
+   RESET Y CONFIGURACIÓN BASE
+   ======================================== */
 * {
     margin: 0;
     padding: 0;
@@ -11,13 +14,20 @@ body {
     overflow: auto;
 }
 
+/* ========================================
+   CONTENEDOR PRINCIPAL
+   ======================================== */
 .ide-container {
     height: 100vh;
     display: flex;
     flex-direction: column;
+    min-width: 800px;
+    overflow: hidden;
 }
 
-/* Header */
+/* ========================================
+   HEADER
+   ======================================== */
 .ide-header {
     height: 50px;
     background: #2d2d30;
@@ -114,16 +124,23 @@ body {
     color: #ff6b6b;
 }
 
-/* Main Content */
+/* ========================================
+   CONTENIDO PRINCIPAL
+   ======================================== */
 .ide-main {
     flex: 1;
     display: flex;
-    overflow: auto
+    overflow: hidden;
+    min-height: 0;
 }
 
-/* Left Panel */
+/* ========================================
+   PANEL IZQUIERDO
+   ======================================== */
 .left-panel {
     width: 250px;
+    min-width: 180px;
+    max-width: 350px;
     background: #252526;
     border-right: 1px solid #3e3e42;
     display: flex;
@@ -250,12 +267,16 @@ body {
     background: #1177bb;
 }
 
-/* Center Panel */
+/* ========================================
+   PANEL CENTRAL
+   ======================================== */
 .center-panel {
     flex: 1;
     display: flex;
     flex-direction: column;
     background: #1e1e1e;
+    min-width: 400px;
+    overflow: hidden;
 }
 
 /* Tabs */
@@ -435,6 +456,7 @@ body {
     height: 100%;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .editor-info {
@@ -457,18 +479,94 @@ body {
 #monaco-editor {
     flex: 1;
     height: 100%;
+    min-height: 0;
+    overflow: hidden;
 }
 
-/* Right Panel */
+/* ========================================
+   PANEL DERECHO (CORRECCIÓN PRINCIPAL)
+   ======================================== */
 .right-panel {
     width: 350px;
+    min-width: 250px;
+    max-width: 450px;
     background: #252526;
     border-left: 1px solid #3e3e42;
     display: flex;
     flex-direction: column;
-    flex-shrink: 0;
+    flex-shrink: 1; /* CORRECCIÓN: permite encogimiento */
+    flex-grow: 0; /* No crece más allá del tamaño establecido */
+    overflow: hidden;
 }
 
+.panel-controls {
+    display: flex;
+    gap: 8px;
+}
+
+/* Console */
+.console-output {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 8px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    background: #1e1e1e;
+    min-height: 0;
+    word-wrap: break-word;
+}
+
+.console-message {
+    margin-bottom: 4px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 2px 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.timestamp {
+    color: #8c8c8c;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.message {
+    flex: 1;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    min-width: 0;
+}
+
+.console-message.info .message {
+    color: #4fc3f7;
+}
+
+.console-message.success .message {
+    color: #81c784;
+}
+
+.console-message.error .message {
+    color: #e57373;
+}
+
+.console-message.warning .message {
+    color: #ffb74d;
+}
+
+.console-message.output .message {
+    color: #ffffff;
+    background: #2d2d30;
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+/* ========================================
+   REPORTS (MODALES)
+   ======================================== */
 .panel-tabs {
     height: 35px;
     background: #2d2d30;
@@ -518,60 +616,6 @@ body {
     display: flex;
 }
 
-/* Console */
-.console-output {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px;
-    font-family: 'Consolas', 'Courier New', monospace;
-    font-size: 12px;
-    line-height: 1.4;
-    background: #1e1e1e;
-}
-
-.console-message {
-    margin-bottom: 4px;
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 2px 0;
-}
-
-.timestamp {
-    color: #8c8c8c;
-    font-size: 11px;
-    white-space: nowrap;
-}
-
-.message {
-    flex: 1;
-    word-wrap: break-word;
-}
-
-.console-message.info .message {
-    color: #4fc3f7;
-}
-
-.console-message.success .message {
-    color: #81c784;
-}
-
-.console-message.error .message {
-    color: #e57373;
-}
-
-.console-message.warning .message {
-    color: #ffb74d;
-}
-
-.console-message.output .message {
-    color: #ffffff;
-    background: #2d2d30;
-    padding: 2px 6px;
-    border-radius: 3px;
-}
-
-/* Reports */
 .report-tabs {
     height: 30px;
     background: #2d2d30;
@@ -622,13 +666,22 @@ body {
 }
 
 .report-header {
-    height: 30px;
-    background: #2d2d30;
+    height: 60px;
+    background: #252526;
     border-bottom: 1px solid #3e3e42;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 12px;
+    padding: 0 20px;
+    flex-shrink: 0;
+}
+
+.report-header h3,
+.report-header h4 {
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
 }
 
 .report-header h4 {
@@ -637,10 +690,65 @@ body {
     font-weight: 500;
 }
 
+.report-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.report-count,
+.error-count,
+.symbol-count {
+    color: #8c8c8c;
+    font-size: 13px;
+    font-weight: 500;
+}
+
 .error-count,
 .symbol-count {
     font-size: 11px;
-    color: #8c8c8c;
+}
+
+.download-btn {
+    background: #0e639c;
+    border: none;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.download-btn:hover {
+    background: #1177bb;
+}
+
+.control-btn {
+    background: #464647;
+    border: none;
+    color: #cccccc;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.control-btn:hover {
+    background: #6c6c6c;
+    color: #ffffff;
+}
+
+.ast-controls {
+    display: flex;
+    gap: 5px;
+}
+
+.download-controls {
+    display: flex;
+    gap: 8px;
 }
 
 .report-list {
@@ -689,6 +797,10 @@ body {
 .error-message {
     color: #ffcdd2;
     line-height: 1.3;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 12px;
+    max-width: 400px;
+    word-wrap: break-word;
 }
 
 .symbol-item {
@@ -774,33 +886,6 @@ body {
     line-height: 1.3;
 }
 
-.ast-node {
-    margin-left: 16px;
-    border-left: 1px solid #3e3e42;
-    padding-left: 12px;
-    margin-bottom: 4px;
-    cursor: pointer;
-    transition: background 0.2s;
-    border-radius: 2px;
-}
-
-.ast-node:hover {
-    background: #2a2d2e;
-}
-
-.ast-node-header {
-    color: #81c784;
-    font-size: 12px;
-    font-weight: 600;
-    margin-bottom: 2px;
-}
-
-.ast-node-info {
-    color: #8c8c8c;
-    font-size: 11px;
-    margin-bottom: 4px;
-}
-
 .empty-report {
     text-align: center;
     color: #8c8c8c;
@@ -808,7 +893,9 @@ body {
     font-size: 13px;
 }
 
-/* Status Bar */
+/* ========================================
+   STATUS BAR
+   ======================================== */
 .status-bar {
     height: 22px;
     background: #007acc;
@@ -827,12 +914,15 @@ body {
     gap: 15px;
 }
 
-.panel-controls {
+.status-right {
     display: flex;
-    gap: 8px;
+    align-items: center;
+    gap: 15px;
 }
 
-/* Modal Styles */
+/* ========================================
+   MODAL STYLES
+   ======================================== */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -851,6 +941,7 @@ body {
     width: 90vw;
     height: 85vh;
     max-width: 1200px;
+    min-width: 800px;
     background: #2d2d30;
     border-radius: 12px;
     border: 1px solid #3e3e42;
@@ -952,83 +1043,14 @@ body {
     display: flex;
 }
 
-.report-header {
-    height: 60px;
-    background: #252526;
-    border-bottom: 1px solid #3e3e42;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 20px;
-    flex-shrink: 0;
-}
-
-.report-header h3 {
-    color: #ffffff;
-    font-size: 16px;
-    font-weight: 600;
-    margin: 0;
-}
-
-.report-controls {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.report-count {
-    color: #8c8c8c;
-    font-size: 13px;
-    font-weight: 500;
-}
-
-.download-btn {
-    background: #0e639c;
-    border: none;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 500;
-    transition: background 0.2s;
-}
-
-.download-btn:hover {
-    background: #1177bb;
-}
-
-.control-btn {
-    background: #464647;
-    border: none;
-    color: #cccccc;
-    padding: 6px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-    transition: all 0.2s;
-}
-
-.control-btn:hover {
-    background: #6c6c6c;
-    color: #ffffff;
-}
-
-.ast-controls {
-    display: flex;
-    gap: 5px;
-}
-
-.download-controls {
-    display: flex;
-    gap: 8px;
-}
-
-/* Table Styles */
+/* ========================================
+   TABLE STYLES
+   ======================================== */
 .table-container {
     flex: 1;
     overflow: auto;
     padding: 0;
+    min-height: 0;
 }
 
 .report-table {
@@ -1036,6 +1058,7 @@ body {
     border-collapse: collapse;
     font-size: 13px;
     background: #1e1e1e;
+    table-layout: fixed;
 }
 
 .report-table th {
@@ -1086,6 +1109,11 @@ body {
 
 .error-row:hover {
     background: #3d2b2b !important;
+    cursor: pointer;
+}
+
+.error-row:hover .error-message {
+    color: #ffcdd2;
 }
 
 .symbol-row {
@@ -1135,23 +1163,6 @@ body {
     border: 1px solid #696969;
 }
 
-.error-message {
-    font-family: 'Consolas', 'Courier New', monospace;
-    font-size: 12px;
-    max-width: 400px;
-    word-wrap: break-word;
-}
-
-/* Resaltar fila de error al hacer hover */
-.error-row:hover {
-    background: #3d2b2b !important;
-    cursor: pointer;
-}
-
-.error-row:hover .error-message {
-    color: #ffcdd2;
-}
-
 .symbol-type-cell {
     font-weight: 600;
     padding: 4px 8px;
@@ -1196,6 +1207,11 @@ body {
     font-weight: 600;
 }
 
+.symbol-type-class {
+    background: #5a2d4d;
+    color: #ff99cc;
+}
+
 .symbol-location {
     font-family: 'Consolas', monospace;
     color: #90a4ae;
@@ -1204,27 +1220,68 @@ body {
     border-radius: 3px;
 }
 
-.symbol-type-class {
-    background: #5a2d4d;
-    color: #ff99cc;
-}
+/* ========================================
+   AST VISUALIZATION
+   ======================================== */
 
-/* AST Visualization */
+/* Contenedor principal del AST */
 .ast-container {
     flex: 1;
     position: relative;
-    overflow: hidden;
+    overflow: auto; /* CAMBIO: permitir scroll */
+    background: #1e1e1e;
+    min-height: 400px; /* Altura mínima garantizada */
 }
 
+/* Visualización del AST */
 .ast-visualization {
     width: 100%;
     height: 100%;
     background: #1e1e1e;
     border-radius: 8px;
-    overflow: hidden;
+    overflow: auto; /* CAMBIO: permitir scroll */
+    position: relative;
+    min-height: 500px; /* Altura mínima para ASTs pequeños */
 }
 
-/* Empty state mejorado */
+/* Wrapper específico para SVG */
+.ast-svg-wrapper {
+    position: relative;
+    background: #1e1e1e;
+    width: 100%;
+    height: auto; /* CAMBIO: altura automática */
+    min-height: 100%;
+    overflow: auto; /* CAMBIO: permitir scroll */
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+/* Estilos para el SVG del AST */
+.ast-svg-wrapper svg {
+    display: block;
+    margin: 0 auto;
+    max-width: none; /* CAMBIO: remover restricción de ancho */
+    max-height: none; /* CAMBIO: remover restricción de altura */
+    width: auto !important; /* CAMBIO: ancho automático */
+    height: auto !important; /* CAMBIO: altura automática */
+    border: 1px solid #3e3e42;
+    border-radius: 8px;
+    background: #1e1e1e;
+    transition: transform 0.2s ease;
+}
+
+/* Contenedor con scroll para ASTs grandes */
+.ast-scrollable-container {
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    position: relative;
+    background: #1e1e1e;
+    border: 1px solid #3e3e42;
+    border-radius: 8px;
+}
+
+/* Estados del AST */
 .empty-ast {
     display: flex;
     flex-direction: column;
@@ -1234,6 +1291,7 @@ body {
     color: #8c8c8c;
     text-align: center;
     padding: 40px;
+    min-height: 300px; /* Altura mínima para el estado vacío */
 }
 
 .empty-ast-icon {
@@ -1253,43 +1311,42 @@ body {
     opacity: 0.7;
 }
 
-/* SVG Wrapper */
-.ast-svg-wrapper {
-    position: relative;
-    background: #1e1e1e;
-}
-
-.ast-svg-wrapper svg {
-    transition: transform 0.2s ease;
-}
-
-/* JSON Tree Visualization */
+/* Wrapper para JSON Tree */
 .ast-json-wrapper {
     font-size: 13px;
     line-height: 1.6;
+    padding: 20px;
+    width: 100%;
+    height: auto;
+    overflow: auto;
+    background: #1e1e1e;
+    font-family: 'Consolas', monospace;
+    color: #d4d4d4;
+    white-space: pre-wrap;
 }
 
-.ast-object,
-.ast-array {
-    border-left: 2px solid #3e3e42;
-    padding-left: 8px;
-}
-
-.ast-property {
-    margin: 2px 0;
-}
-
-.ast-key {
-    font-weight: 600;
-}
-
-/* Text Wrapper */
+/* Wrapper para texto plano */
 .ast-text-wrapper {
     font-size: 12px;
     line-height: 1.5;
+    padding: 20px;
+    width: 100%;
+    height: auto;
+    overflow: auto;
+    background: #1e1e1e;
+    font-family: 'Consolas', monospace;
+    color: #d4d4d4;
+    white-space: pre-wrap;
 }
 
-/* Controles AST mejorados */
+/* Controles del AST mejorados */
+.ast-controls {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
 .ast-controls .control-btn {
     background: #007acc;
     color: white;
@@ -1300,6 +1357,7 @@ body {
     font-size: 12px;
     margin: 0 2px;
     transition: background 0.2s;
+    white-space: nowrap;
 }
 
 .ast-controls .control-btn:hover {
@@ -1312,57 +1370,61 @@ body {
     opacity: 0.5;
 }
 
-/* AST Node Styles */
-.ast-node {
-    position: relative;
-    display: inline-block;
-    margin: 10px;
-    padding: 8px 12px;
-    background: #2d2d30;
-    border: 2px solid #007acc;
-    border-radius: 8px;
-    color: #ffffff;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-.ast-node:hover {
-    background: #007acc;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
-}
-
-.ast-node-type {
-    font-weight: 600;
-    color: #81c784;
-    margin-bottom: 4px;
-}
-
-.ast-node-value {
-    color: #ffb74d;
-    font-style: italic;
-    margin-bottom: 2px;
-}
-
-.ast-node-location {
-    color: #8c8c8c;
-    font-size: 10px;
-}
-
-.ast-connection {
+/* Indicador de zoom */
+.zoom-indicator {
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
     position: absolute;
-    border: 1px solid #464647;
-    z-index: 1;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
+    pointer-events: none;
 }
 
-/* D3.js Tree Styles */
+/* Estilos para nodos del AST mejorados */
+.ast-object,
+.ast-array {
+    border-left: 2px solid #007acc;
+    padding-left: 12px;
+    margin: 4px 0;
+}
+
+.ast-property {
+    margin: 2px 0;
+    padding: 2px 0;
+}
+
+.ast-key {
+    font-weight: 600;
+    color: #9cdcfe;
+}
+
+/* Valores del AST con colores */
+.ast-value-string {
+    color: #ce9178;
+}
+
+.ast-value-number {
+    color: #b5cea8;
+}
+
+.ast-value-boolean {
+    color: #569cd6;
+}
+
+.ast-value-null {
+    color: #8c8c8c;
+}
+
+/* D3.js Tree Styles mejorados */
 .ast-svg {
     width: 100%;
     height: 100%;
     background: #1e1e1e;
+    overflow: visible; /* IMPORTANTE: permitir contenido fuera del viewport */
 }
 
 .ast-svg .node circle {
@@ -1370,11 +1432,13 @@ body {
     stroke: #ffffff;
     stroke-width: 2px;
     cursor: pointer;
+    transition: all 0.2s;
 }
 
 .ast-svg .node:hover circle {
     fill: #1177bb;
     stroke-width: 3px;
+    r: 8;
 }
 
 .ast-svg .node text {
@@ -1383,12 +1447,14 @@ body {
     text-anchor: middle;
     dominant-baseline: middle;
     pointer-events: none;
+    font-weight: 500;
 }
 
 .ast-svg .link {
     fill: none;
     stroke: #464647;
     stroke-width: 2px;
+    transition: all 0.2s;
 }
 
 .ast-svg .link:hover {
@@ -1396,8 +1462,279 @@ body {
     stroke-width: 3px;
 }
 
-/* Responsive Modal */
+/* Estilos para diferentes tipos de nodos */
+.ast-svg .node.program circle {
+    fill: #4caf50;
+}
+
+.ast-svg .node.statement circle {
+    fill: #ff9800;
+}
+
+.ast-svg .node.expression circle {
+    fill: #2196f3;
+}
+
+.ast-svg .node.operator circle {
+    fill: #9c27b0;
+}
+
+.ast-svg .node.literal circle {
+    fill: #795548;
+}
+
+.ast-svg .node.identifier circle {
+    fill: #607d8b;
+}
+
+/* Tooltip para nodos del AST */
+.ast-tooltip {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 1000;
+    max-width: 300px;
+    word-wrap: break-word;
+    border: 1px solid #007acc;
+}
+
+/* Loading state para el AST */
+.ast-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #8c8c8c;
+    font-size: 14px;
+}
+
+.ast-loading::before {
+    content: "⏳";
+    margin-right: 8px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Error state para el AST */
+.ast-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #e57373;
+    text-align: center;
+    padding: 40px;
+}
+
+.ast-error-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.ast-error p {
+    margin: 8px 0;
+}
+
+.ast-error .retry-btn {
+    background: #007acc;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 16px;
+    transition: background 0.2s;
+}
+
+.ast-error .retry-btn:hover {
+    background: #1177bb;
+}
+
+/* Responsive para el AST */
 @media (max-width: 1200px) {
+    .ast-svg-wrapper {
+        padding: 15px;
+    }
+    
+    .ast-controls {
+        justify-content: center;
+    }
+    
+    .ast-controls .control-btn {
+        padding: 6px 10px;
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 768px) {
+    .ast-svg-wrapper {
+        padding: 10px;
+    }
+    
+    .ast-json-wrapper,
+    .ast-text-wrapper {
+        padding: 15px;
+        font-size: 11px;
+    }
+    
+    .ast-controls {
+        gap: 3px;
+    }
+    
+    .ast-controls .control-btn {
+        padding: 5px 8px;
+        font-size: 10px;
+    }
+}
+
+/* Scrollbars específicas para el AST */
+.ast-container::-webkit-scrollbar,
+.ast-visualization::-webkit-scrollbar,
+.ast-svg-wrapper::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+.ast-container::-webkit-scrollbar-track,
+.ast-visualization::-webkit-scrollbar-track,
+.ast-svg-wrapper::-webkit-scrollbar-track {
+    background: #2d2d30;
+    border-radius: 6px;
+}
+
+.ast-container::-webkit-scrollbar-thumb,
+.ast-visualization::-webkit-scrollbar-thumb,
+.ast-svg-wrapper::-webkit-scrollbar-thumb {
+    background: #007acc;
+    border-radius: 6px;
+    border: 2px solid #2d2d30;
+}
+
+.ast-container::-webkit-scrollbar-thumb:hover,
+.ast-visualization::-webkit-scrollbar-thumb:hover,
+.ast-svg-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #1177bb;
+}
+
+/* Hacer el AST completamente visible */
+.ast-full-view {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 9999 !important;
+    background: #1e1e1e !important;
+    overflow: auto !important;
+}
+
+.ast-full-view .ast-svg-wrapper {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 100vh !important;
+    padding: 40px !important;
+}
+
+.ast-full-view .ast-svg-wrapper svg {
+    width: auto !important;
+    height: auto !important;
+    max-width: none !important;
+    max-height: none !important;
+}
+
+/* ========================================
+   SCROLLBARS
+   ======================================== */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #424242 #1e1e1e;
+}
+
+*::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+    background: #1e1e1e;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: #424242;
+    border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: #4f4f4f;
+}
+
+*::-webkit-scrollbar-corner {
+    background: #1e1e1e;
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.file-item,
+.error-item,
+.symbol-item,
+.ast-node {
+    animation: fadeIn 0.2s ease-out;
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+/* Para pantallas medianas (1200px - 1400px) */
+@media (max-width: 1400px) and (min-width: 1200px) {
+    .left-panel {
+        width: 220px;
+        min-width: 180px;
+    }
+    
+    .right-panel {
+        width: 320px;
+        min-width: 250px;
+    }
+}
+
+/* Para pantallas pequeñas (1000px - 1200px) */
+@media (max-width: 1200px) and (min-width: 1000px) {
+    .left-panel {
+        width: 200px;
+        min-width: 160px;
+    }
+    
+    .right-panel {
+        width: 280px;
+        min-width: 220px;
+    }
+    
+    .center-panel {
+        min-width: 350px;
+    }
+
     .modal-container {
         width: 95vw;
         height: 90vh;
@@ -1417,6 +1754,61 @@ body {
 
     .download-controls {
         flex-wrap: wrap;
+    }
+}
+
+/* Para pantallas muy pequeñas (menos de 1000px) */
+@media (max-width: 1000px) {
+    .ide-main {
+        flex-direction: column;
+    }
+    
+    .left-panel {
+        width: 100%;
+        height: 200px;
+        border-right: none;
+        border-bottom: 1px solid #3e3e42;
+    }
+    
+    .center-panel {
+        flex: 1;
+        min-width: auto;
+        min-height: 300px;
+    }
+    
+    .right-panel {
+        width: 100%;
+        height: 250px;
+        border-left: none;
+        border-top: 1px solid #3e3e42;
+    }
+    
+    .header-btn span {
+        display: none;
+    }
+    
+    .header-btn {
+        padding: 6px 8px;
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 900px) {
+    .modal-container {
+        width: 95vw;
+        height: 90vh;
+        min-width: 300px;
+    }
+    
+    .modal-tabs {
+        flex-direction: row;
+        flex-wrap: wrap;
+        height: auto;
+    }
+    
+    .modal-tab {
+        flex: 1;
+        min-width: 100px;
     }
 }
 
@@ -1440,82 +1832,28 @@ body {
     }
 }
 
-/* Panel Simplificado */
-.right-panel {
-    width: 350px;
-    background: #252526;
-    border-left: 1px solid #3e3e42;
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
+/* ========================================
+   LAYOUT MÓVIL (para JavaScript)
+   ======================================== */
+.ide-main.mobile-layout {
+    flex-direction: column !important;
 }
 
-.status-left {
+.ide-main.mobile-layout .left-panel {
+    width: 100% !important;
+    height: 200px !important;
+    border-right: none !important;
+    border-bottom: 1px solid #3e3e42 !important;
+}
 
-    .status-right {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-    }
+.ide-main.mobile-layout .right-panel {
+    width: 100% !important;
+    height: 250px !important;
+    border-left: none !important;
+    border-top: 1px solid #3e3e42 !important;
+}
 
-    /* Scrollbars */
-
-    ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-        background: #1e1e1e;
-    }
-
-    ::-webkit-scrollbar-thumb {
-        background: #424242;
-        border-radius: 4px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-        background: #4f4f4f;
-    }
-
-    /* Animations */
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .file-item, .error-item, .symbol-item, .ast-node {
-        animation: fadeIn 0.2s ease-out;
-    }
-
-    /* Responsive */
-    @media (max-width: 1200px) {
-        .left-panel {
-            width: 200px;
-        }
-
-        .right-panel {
-            width: 300px;
-        }
-    }
-
-    @media (max-width: 1000px) {
-        .left-panel {
-            width: 180px;
-        }
-
-        .right-panel {
-            width: 280px;
-        }
-
-        .header-btn span {
-            display: none;
-        }
-    }
+.ide-main.mobile-layout .center-panel {
+    min-width: auto !important;
+    min-height: 300px !important;
 }
