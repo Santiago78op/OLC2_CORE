@@ -82,11 +82,17 @@ type VLangGrammarListener interface {
 	// EnterStringLiteral is called when entering the StringLiteral production.
 	EnterStringLiteral(c *StringLiteralContext)
 
+	// EnterInterpolatedStringLiteral is called when entering the InterpolatedStringLiteral production.
+	EnterInterpolatedStringLiteral(c *InterpolatedStringLiteralContext)
+
 	// EnterBoolLiteral is called when entering the BoolLiteral production.
 	EnterBoolLiteral(c *BoolLiteralContext)
 
 	// EnterNilLiteral is called when entering the NilLiteral production.
 	EnterNilLiteral(c *NilLiteralContext)
+
+	// EnterInterpolatedString is called when entering the InterpolatedString production.
+	EnterInterpolatedString(c *InterpolatedStringContext)
 
 	// EnterIncremento is called when entering the incremento production.
 	EnterIncremento(c *IncrementoContext)
@@ -286,11 +292,17 @@ type VLangGrammarListener interface {
 	// ExitStringLiteral is called when exiting the StringLiteral production.
 	ExitStringLiteral(c *StringLiteralContext)
 
+	// ExitInterpolatedStringLiteral is called when exiting the InterpolatedStringLiteral production.
+	ExitInterpolatedStringLiteral(c *InterpolatedStringLiteralContext)
+
 	// ExitBoolLiteral is called when exiting the BoolLiteral production.
 	ExitBoolLiteral(c *BoolLiteralContext)
 
 	// ExitNilLiteral is called when exiting the NilLiteral production.
 	ExitNilLiteral(c *NilLiteralContext)
+
+	// ExitInterpolatedString is called when exiting the InterpolatedString production.
+	ExitInterpolatedString(c *InterpolatedStringContext)
 
 	// ExitIncremento is called when exiting the incremento production.
 	ExitIncremento(c *IncrementoContext)

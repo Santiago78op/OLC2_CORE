@@ -107,11 +107,19 @@ func (v *BaseVLangGrammarVisitor) VisitStringLiteral(ctx *StringLiteralContext) 
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseVLangGrammarVisitor) VisitInterpolatedStringLiteral(ctx *InterpolatedStringLiteralContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseVLangGrammarVisitor) VisitBoolLiteral(ctx *BoolLiteralContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
 func (v *BaseVLangGrammarVisitor) VisitNilLiteral(ctx *NilLiteralContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseVLangGrammarVisitor) VisitInterpolatedString(ctx *InterpolatedStringContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

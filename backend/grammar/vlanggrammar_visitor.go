@@ -82,11 +82,17 @@ type VLangGrammarVisitor interface {
 	// Visit a parse tree produced by VLangGrammar#StringLiteral.
 	VisitStringLiteral(ctx *StringLiteralContext) interface{}
 
+	// Visit a parse tree produced by VLangGrammar#InterpolatedStringLiteral.
+	VisitInterpolatedStringLiteral(ctx *InterpolatedStringLiteralContext) interface{}
+
 	// Visit a parse tree produced by VLangGrammar#BoolLiteral.
 	VisitBoolLiteral(ctx *BoolLiteralContext) interface{}
 
 	// Visit a parse tree produced by VLangGrammar#NilLiteral.
 	VisitNilLiteral(ctx *NilLiteralContext) interface{}
+
+	// Visit a parse tree produced by VLangGrammar#InterpolatedString.
+	VisitInterpolatedString(ctx *InterpolatedStringContext) interface{}
 
 	// Visit a parse tree produced by VLangGrammar#incremento.
 	VisitIncremento(ctx *IncrementoContext) interface{}

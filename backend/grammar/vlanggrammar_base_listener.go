@@ -170,6 +170,14 @@ func (s *BaseVLangGrammarListener) EnterStringLiteral(ctx *StringLiteralContext)
 // ExitStringLiteral is called when production StringLiteral is exited.
 func (s *BaseVLangGrammarListener) ExitStringLiteral(ctx *StringLiteralContext) {}
 
+// EnterInterpolatedStringLiteral is called when production InterpolatedStringLiteral is entered.
+func (s *BaseVLangGrammarListener) EnterInterpolatedStringLiteral(ctx *InterpolatedStringLiteralContext) {
+}
+
+// ExitInterpolatedStringLiteral is called when production InterpolatedStringLiteral is exited.
+func (s *BaseVLangGrammarListener) ExitInterpolatedStringLiteral(ctx *InterpolatedStringLiteralContext) {
+}
+
 // EnterBoolLiteral is called when production BoolLiteral is entered.
 func (s *BaseVLangGrammarListener) EnterBoolLiteral(ctx *BoolLiteralContext) {}
 
@@ -181,6 +189,12 @@ func (s *BaseVLangGrammarListener) EnterNilLiteral(ctx *NilLiteralContext) {}
 
 // ExitNilLiteral is called when production NilLiteral is exited.
 func (s *BaseVLangGrammarListener) ExitNilLiteral(ctx *NilLiteralContext) {}
+
+// EnterInterpolatedString is called when production InterpolatedString is entered.
+func (s *BaseVLangGrammarListener) EnterInterpolatedString(ctx *InterpolatedStringContext) {}
+
+// ExitInterpolatedString is called when production InterpolatedString is exited.
+func (s *BaseVLangGrammarListener) ExitInterpolatedString(ctx *InterpolatedStringContext) {}
 
 // EnterIncremento is called when production incremento is entered.
 func (s *BaseVLangGrammarListener) EnterIncremento(ctx *IncrementoContext) {}
