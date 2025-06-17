@@ -22,15 +22,17 @@ import (
 )
 
 type executionResult struct {
-	Success       bool                `json:"success"`
-	Errors        []repl.Error        `json:"errors"`
-	Output        string              `json:"output"`
-	CSTSvg        string              `json:"cstSvg"`
-	AST           string              `json:"ast"`
-	Symbols       []repl.ReportSymbol `json:"symbols"`
-	ScopeTrace    repl.ReportTable    `json:"scopeTrace"`
-	ErrorSummary  map[string]int      `json:"errorSummary"`
-	ExecutionTime int64               `json:"executionTime"`
+	Success         bool                  `json:"success"`
+	Errors          []repl.Error          `json:"errors"`
+	Output          string                `json:"output"`          // Output plano para retrocompatibilidad
+	FormattedOutput string                `json:"formattedOutput"` // Output con formato mejorado
+	ConsoleMessages []repl.ConsoleMessage `json:"consoleMessages"` // Mensajes estructurados
+	CSTSvg          string                `json:"cstSvg"`
+	AST             string                `json:"ast"`
+	Symbols         []repl.ReportSymbol   `json:"symbols"`
+	ScopeTrace      repl.ReportTable      `json:"scopeTrace"`
+	ErrorSummary    map[string]int        `json:"errorSummary"`
+	ExecutionTime   int64                 `json:"executionTime"`
 }
 
 func executeCode(w http.ResponseWriter, r *http.Request) {
@@ -121,8 +123,11 @@ func executeCode(w http.ResponseWriter, r *http.Request) {
 
 	var replVisitor *repl.ReplVisitor
 	var output string = ""
+	var formattedOutput string = ""
+	var consoleMessages []repl.ConsoleMessage
 
 	// 5. Solo continuar con análisis semántico si no hay errores críticos de sintaxis
+
 	if !hasCompilationErrors {
 		// Análisis Semántico y Ejecución
 		dclVisitor := repl.NewDclVisitor(syntaxErrorListener.ErrorTable)
@@ -131,6 +136,8 @@ func executeCode(w http.ResponseWriter, r *http.Request) {
 		replVisitor = repl.NewVisitor(dclVisitor)
 		replVisitor.Visit(tree)
 		output = replVisitor.Console.GetOutput()
+		formattedOutput = replVisitor.Console.GetFormattedOutput()
+		consoleMessages = replVisitor.Console.GetMessages()
 	} else {
 		// Si hay errores de compilación, no ejecutar pero crear visitor básico para reportes
 		dclVisitor := repl.NewDclVisitor(syntaxErrorListener.ErrorTable)
@@ -184,15 +191,17 @@ func executeCode(w http.ResponseWriter, r *http.Request) {
 
 	// Crear resultado con información detallada
 	result := executionResult{
-		Success:       success,
-		Errors:        syntaxErrorListener.ErrorTable.Errors,
-		Output:        output,
-		CSTSvg:        finalAST,
-		AST:           finalAST,
-		Symbols:       symbols,
-		ScopeTrace:    scopeReport,
-		ErrorSummary:  errorSummary,                                        // Agregar resumen de errores
-		ExecutionTime: interpretationEndTime.Sub(startTime).Milliseconds(), // Tiempo en ms
+		Success:         success,
+		Errors:          syntaxErrorListener.ErrorTable.Errors,
+		Output:          output,
+		FormattedOutput: formattedOutput,
+		ConsoleMessages: consoleMessages,
+		CSTSvg:          finalAST,
+		AST:             finalAST,
+		Symbols:         symbols,
+		ScopeTrace:      scopeReport,
+		ErrorSummary:    errorSummary,
+		ExecutionTime:   interpretationEndTime.Sub(startTime).Milliseconds(),
 	}
 
 	// Enviar respuesta
