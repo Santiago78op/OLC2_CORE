@@ -64,6 +64,8 @@ COLON    : ':';
 DOT      : '.';
 COMMA    : ',';
 
+// Token para el símbolo $ (interpolación)
+DOLLAR   : '$';
 
 // Literales
 fragment DIGIT : [0-9];

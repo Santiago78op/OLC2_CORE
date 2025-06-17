@@ -708,18 +708,23 @@ func (v *ReplVisitor) VisitFloatLiteral(ctx *compiler.FloatLiteralContext) inter
 }
 
 // literal String
+// literal String
 func (v *ReplVisitor) VisitStringLiteral(ctx *compiler.StringLiteralContext) interface{} {
-
-	// remove quotes
+	// Remover las comillas
 	stringVal := ctx.GetText()[1 : len(ctx.GetText())-1]
 
-	// \" \\ \n \r \
+	// Procesar secuencias de escape
 	stringVal = strings.ReplaceAll(stringVal, "\\\"", "\"")
 	stringVal = strings.ReplaceAll(stringVal, "\\\\", "\\")
 	stringVal = strings.ReplaceAll(stringVal, "\\n", "\n")
 	stringVal = strings.ReplaceAll(stringVal, "\\r", "\r")
 
-	// Character literal
+	// ✨ NUEVA FUNCIONALIDAD: Procesar interpolación de strings
+	if HasInterpolation(stringVal) {
+		stringVal = v.InterpolateString(stringVal, ctx.GetStart())
+	}
+
+	// Character literal (un solo carácter)
 	if len(stringVal) == 1 {
 		return &value.CharacterValue{
 			InternalValue: stringVal,
@@ -730,7 +735,6 @@ func (v *ReplVisitor) VisitStringLiteral(ctx *compiler.StringLiteralContext) int
 	return &value.StringValue{
 		InternalValue: stringVal,
 	}
-
 }
 
 // literal Bool

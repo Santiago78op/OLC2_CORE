@@ -76,8 +76,6 @@ func (g *ASTGenerator) visit(tree antlr.ParseTree) *ASTNode {
 			node.Line = t.GetSymbol().GetLine()
 			node.Column = t.GetSymbol().GetColumn()
 		}
-		// Los nodos terminales generalmente no necesitan hijos
-		return node
 	default:
 		// Para otros tipos de contexto
 		node.Type = getSimpleTypeName(fmt.Sprintf("%T", tree))
@@ -88,23 +86,8 @@ func (g *ASTGenerator) visit(tree antlr.ParseTree) *ASTNode {
 		}
 	}
 
-	// Limitar la cantidad de hijos para evitar ASTs muy grandes
-	maxChildren := 100
-	childCount := tree.GetChildCount()
-	if childCount > maxChildren {
-		// Agregar un nodo especial indicando que hay más hijos
-		node.Children = append(node.Children, &ASTNode{
-			Type:     "Info",
-			Text:     fmt.Sprintf("... y %d nodos más", childCount-maxChildren),
-			Line:     0,
-			Column:   0,
-			Children: make([]*ASTNode, 0),
-		})
-		childCount = maxChildren
-	}
-
 	// Visitar hijos con conversión de tipo correcta
-	for i := 0; i < childCount; i++ {
+	for i := 0; i < tree.GetChildCount(); i++ {
 		child := tree.GetChild(i)
 
 		// Convertir antlr.Tree a antlr.ParseTree

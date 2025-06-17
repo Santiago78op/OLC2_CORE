@@ -117,8 +117,14 @@ literal
     : INT_LITERAL                                 # IntLiteral
     | FLOAT_LITERAL                               # FloatLiteral
     | STRING_LITERAL                              # StringLiteral
+    | interpolated_string                         # InterpolatedStringLiteral
     | BOOL_LITERAL                                # BoolLiteral
     | NIL_LITERAL                                 # NilLiteral
+    ;
+
+// Nueva regla para strings interpolados
+interpolated_string
+    : STRING_LITERAL                              # InterpolatedString
     ;
 
 // Incremento y decremento
