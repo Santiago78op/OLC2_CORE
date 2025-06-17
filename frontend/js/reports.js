@@ -92,11 +92,46 @@ class ReportsManager {
                 this.hideReportsModal();
             }
         });
+
+        // Agregar evento para botón de ajuste automático (se creará dinámicamente)
+        setTimeout(() => {
+            const fitBtn = document.getElementById('fitASTBtn');
+            if (fitBtn) {
+                fitBtn.addEventListener('click', () => {
+                    this.fitASTToContainer();
+                });
+            }
+        }, 100);
     }
 
     setupModal() {
         // Configuración inicial del modal
         this.hideReportsModal();
+        this.createFitButton();
+    }
+
+    createFitButton() {
+        // Crear botón de ajuste automático
+        const astControls = document.querySelector('.ast-controls');
+        if (astControls && !document.getElementById('fitASTBtn')) {
+            const fitBtn = document.createElement('button');
+            fitBtn.className = 'control-btn';
+            fitBtn.id = 'fitASTBtn';
+            fitBtn.innerHTML = '⤢';
+            fitBtn.title = 'Ajustar al contenedor';
+            
+            // Insertar después del botón de reset zoom
+            const resetBtn = document.getElementById('resetZoomBtn');
+            if (resetBtn) {
+                resetBtn.parentNode.insertBefore(fitBtn, resetBtn.nextSibling);
+            } else {
+                astControls.appendChild(fitBtn);
+            }
+            
+            fitBtn.addEventListener('click', () => {
+                this.fitASTToContainer();
+            });
+        }
     }
 
     showReportsModal() {
@@ -244,7 +279,7 @@ class ReportsManager {
         count.textContent = `${symbols.length} ${symbols.length === 1 ? 'símbolo' : 'símbolos'}`;
 
         if (symbols.length === 0) {
-            tbody.innerHTML = '<tr class="empty-row"><td colspan="5">No hay símbolos que mostrar</td></tr>';
+            tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No hay símbolos que mostrar</td></tr>';
             return;
         }
 
@@ -262,7 +297,8 @@ class ReportsManager {
                 <td><span class="symbol-type-cell ${symbolType}">${this.getSymbolTypeDisplay(symbol.type)}</span></td>
                 <td>${symbol.type || 'unknown'}</td>
                 <td><span class="symbol-scope ${scopeClass}">${symbol.scope || 'global'}</span></td>
-                <td><span class="symbol-location">${symbol.line || 0}:${symbol.column || 0}</span></td>
+                <td>${symbol.line || 0}</td>
+                <td>${symbol.column || 0}</td>
             `;
 
             // Click para ir a la línea
@@ -370,60 +406,298 @@ class ReportsManager {
         }
 
         const container = document.getElementById('astVisualization');
-        container.innerHTML = '';
+        
+        // Mostrar estado de carga
+        this.showASTLoading(container);
 
         console.log('🎨 Renderizando AST...');
 
-        // Verificar si es SVG
-        if (typeof this.astData === 'string' && this.astData.includes('<svg')) {
-            this.renderSVGAST(container);
-        } else if (typeof this.astData === 'object') {
-            this.renderJSONAST(container);
-        } else {
-            this.renderTextAST(container);
-        }
+        // Usar setTimeout para permitir que se muestre el loading
+        setTimeout(() => {
+            try {
+                // Verificar si es SVG
+                if (typeof this.astData === 'string' && this.astData.includes('<svg')) {
+                    this.renderSVGAST(container);
+                } else if (typeof this.astData === 'object') {
+                    this.renderJSONAST(container);
+                } else {
+                    this.renderTextAST(container);
+                }
+            } catch (error) {
+                console.error('Error renderizando AST:', error);
+                this.showASTError(container, error);
+            }
+        }, 100);
     }
 
-    // Método para renderizar AST en formato SVG
+    // Método para mostrar estado de carga
+    showASTLoading(container) {
+        container.innerHTML = `
+            <div class="ast-loading">
+                Generando visualización del AST...
+            </div>
+        `;
+    }
+
+    // Método para mostrar error
+    showASTError(container, error) {
+        container.innerHTML = `
+            <div class="ast-error">
+                <div class="ast-error-icon">⚠️</div>
+                <p>Error al cargar el AST</p>
+                <small>${error.message || 'Error desconocido'}</small>
+                <button class="retry-btn" onclick="window.reportsManager.updateASTVisualization()">
+                    Reintentar
+                </button>
+            </div>
+        `;
+    }
+
+    // Método mejorado para renderizar AST en formato SVG
     renderSVGAST(container) {
-        console.log('📊 Renderizando SVG AST');
+        console.log('📊 Renderizando SVG AST mejorado');
+        
+        // Limpiar contenedor
+        container.innerHTML = '';
+        
+        // Crear contenedor con scroll
+        const scrollContainer = document.createElement('div');
+        scrollContainer.className = 'ast-scrollable-container';
         
         const wrapper = document.createElement('div');
         wrapper.className = 'ast-svg-wrapper';
         wrapper.style.cssText = `
             width: 100%;
-            height: 100%;
+            height: auto;
+            min-height: 100%;
             display: flex;
-            justify-content: center;
-            align-items: center;
+            justify-content: flex-start;
+            align-items: flex-start;
             background: #1e1e1e;
             overflow: auto;
             padding: 20px;
             box-sizing: border-box;
+            position: relative;
         `;
 
-        // Insertar el SVG directamente
+        // Insertar el SVG
         wrapper.innerHTML = this.astData;
 
-        // Ajustar el SVG para que sea responsive
+        // Obtener el SVG y ajustarlo
         const svg = wrapper.querySelector('svg');
         if (svg) {
+            // Obtener dimensiones originales del SVG
+            const viewBox = svg.getAttribute('viewBox');
+            const width = svg.getAttribute('width');
+            const height = svg.getAttribute('height');
+            
+            console.log('📐 Dimensiones del SVG:', {
+                viewBox,
+                width,
+                height,
+                clientWidth: svg.clientWidth,
+                clientHeight: svg.clientHeight
+            });
+
+            // Configurar SVG para que se muestre completo
             svg.style.cssText = `
-                max-width: 100%;
-                max-height: 100%;
-                width: auto;
-                height: auto;
+                display: block;
+                width: auto !important;
+                height: auto !important;
+                max-width: none !important;
+                max-height: none !important;
+                margin: 0;
                 border: 1px solid #3e3e42;
                 border-radius: 8px;
                 background: #1e1e1e;
             `;
+
+            // Si no tiene viewBox, calcularlo basado en el contenido
+            if (!viewBox && svg.getBBox) {
+                try {
+                    const bbox = svg.getBBox();
+                    const margin = 20;
+                    const calculatedViewBox = `${bbox.x - margin} ${bbox.y - margin} ${bbox.width + margin * 2} ${bbox.height + margin * 2}`;
+                    svg.setAttribute('viewBox', calculatedViewBox);
+                    console.log('📏 ViewBox calculado:', calculatedViewBox);
+                } catch (error) {
+                    console.warn('⚠️ No se pudo calcular viewBox:', error);
+                }
+            }
+
+            // Asegurar que el SVG preserve su aspect ratio
+            svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
             
-            // Agregar zoom con scroll
-            this.addSVGZoomControls(wrapper, svg);
+            // Agregar indicador de zoom
+            this.addZoomIndicator(wrapper);
+            
+            // Agregar controles de zoom mejorados
+            this.addAdvancedZoomControls(wrapper, svg);
+            
+            // Agregar botón de pantalla completa
+            this.addFullscreenButton(wrapper);
         }
 
-        container.appendChild(wrapper);
+        scrollContainer.appendChild(wrapper);
+        container.appendChild(scrollContainer);
+        
         this.astZoom = 1;
+        
+        // Forzar re-render después de un frame
+        requestAnimationFrame(() => {
+            if (svg) {
+                // Disparar evento de resize para asegurar renderizado correcto
+                window.dispatchEvent(new Event('resize'));
+            }
+        });
+    }
+
+    // Agregar indicador de zoom
+    addZoomIndicator(wrapper) {
+        const indicator = document.createElement('div');
+        indicator.className = 'zoom-indicator';
+        indicator.textContent = '100%';
+        indicator.id = 'ast-zoom-indicator';
+        wrapper.appendChild(indicator);
+    }
+
+    // Controles de zoom avanzados
+    addAdvancedZoomControls(wrapper, svg) {
+        let scale = 1;
+        let isDragging = false;
+        let startX, startY, scrollLeft, scrollTop;
+
+        // Zoom con rueda del mouse
+        wrapper.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            scale = Math.max(0.1, Math.min(3, scale * delta));
+            
+            svg.style.transform = `scale(${scale})`;
+            this.astZoom = scale;
+            
+            // Actualizar indicador
+            const indicator = wrapper.querySelector('#ast-zoom-indicator');
+            if (indicator) {
+                indicator.textContent = `${Math.round(scale * 100)}%`;
+            }
+        });
+
+        // Pan con mouse
+        wrapper.addEventListener('mousedown', (e) => {
+            if (e.button === 0) { // Solo botón izquierdo
+                isDragging = true;
+                wrapper.style.cursor = 'grabbing';
+                startX = e.pageX - wrapper.offsetLeft;
+                startY = e.pageY - wrapper.offsetTop;
+                scrollLeft = wrapper.scrollLeft;
+                scrollTop = wrapper.scrollTop;
+                e.preventDefault();
+            }
+        });
+
+        wrapper.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            
+            const x = e.pageX - wrapper.offsetLeft;
+            const y = e.pageY - wrapper.offsetTop;
+            const walkX = (x - startX) * 2;
+            const walkY = (y - startY) * 2;
+            
+            wrapper.scrollLeft = scrollLeft - walkX;
+            wrapper.scrollTop = scrollTop - walkY;
+        });
+
+        wrapper.addEventListener('mouseup', () => {
+            isDragging = false;
+            wrapper.style.cursor = 'grab';
+        });
+
+        wrapper.addEventListener('mouseleave', () => {
+            isDragging = false;
+            wrapper.style.cursor = 'default';
+        });
+
+        // Establecer cursor inicial
+        wrapper.style.cursor = 'grab';
+    }
+
+    // Botón de pantalla completa
+    addFullscreenButton(wrapper) {
+        const fullscreenBtn = document.createElement('button');
+        fullscreenBtn.innerHTML = '⛶';
+        fullscreenBtn.title = 'Ver en pantalla completa';
+        fullscreenBtn.style.cssText = `
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 122, 204, 0.8);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            z-index: 10;
+            transition: background 0.2s;
+        `;
+        
+        fullscreenBtn.addEventListener('mouseenter', () => {
+            fullscreenBtn.style.background = 'rgba(0, 122, 204, 1)';
+        });
+        
+        fullscreenBtn.addEventListener('mouseleave', () => {
+            fullscreenBtn.style.background = 'rgba(0, 122, 204, 0.8)';
+        });
+        
+        fullscreenBtn.addEventListener('click', () => {
+            this.toggleASTFullscreen(wrapper);
+        });
+        
+        wrapper.appendChild(fullscreenBtn);
+    }
+
+    // Pantalla completa para el AST
+    toggleASTFullscreen(wrapper) {
+        if (wrapper.classList.contains('ast-full-view')) {
+            // Salir de pantalla completa
+            wrapper.classList.remove('ast-full-view');
+            
+            // Restaurar al contenedor original
+            const astContainer = document.querySelector('#astVisualization');
+            if (astContainer) {
+                astContainer.appendChild(wrapper.parentElement);
+            }
+            
+            // Actualizar botón
+            const fullscreenBtn = wrapper.querySelector('button');
+            if (fullscreenBtn) {
+                fullscreenBtn.innerHTML = '⛶';
+                fullscreenBtn.title = 'Ver en pantalla completa';
+            }
+        } else {
+            // Entrar en pantalla completa
+            wrapper.classList.add('ast-full-view');
+            document.body.appendChild(wrapper);
+            
+            // Actualizar botón
+            const fullscreenBtn = wrapper.querySelector('button');
+            if (fullscreenBtn) {
+                fullscreenBtn.innerHTML = '⤓';
+                fullscreenBtn.title = 'Salir de pantalla completa';
+            }
+            
+            // Agregar evento para salir con ESC
+            const escHandler = (e) => {
+                if (e.key === 'Escape') {
+                    this.toggleASTFullscreen(wrapper);
+                    document.removeEventListener('keydown', escHandler);
+                }
+            };
+            document.addEventListener('keydown', escHandler);
+        }
     }
 
     // Método para renderizar AST en formato JSON/Objeto
@@ -469,23 +743,6 @@ class ReportsManager {
         container.appendChild(wrapper);
     }
 
-    // Agregar controles de zoom para SVG
-    addSVGZoomControls(wrapper, svg) {
-        let scale = 1;
-        const minScale = 0.1;
-        const maxScale = 3;
-
-        wrapper.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            
-            const delta = e.deltaY > 0 ? 0.9 : 1.1;
-            scale = Math.max(minScale, Math.min(maxScale, scale * delta));
-            
-            svg.style.transform = `scale(${scale})`;
-            this.astZoom = scale;
-        });
-    }
-
     // Crear visualización en árbol para JSON
     createTreeVisualization(data, level = 0) {
         const indent = '  '.repeat(level);
@@ -523,6 +780,7 @@ class ReportsManager {
         return html;
     }
 
+    // Método mejorado para zoom
     zoomAST(factor) {
         const container = document.getElementById('astVisualization');
         const svg = container.querySelector('svg');
@@ -531,9 +789,18 @@ class ReportsManager {
             this.astZoom *= factor;
             this.astZoom = Math.max(0.1, Math.min(3, this.astZoom));
             svg.style.transform = `scale(${this.astZoom})`;
+            
+            // Actualizar indicador
+            const indicator = container.querySelector('#ast-zoom-indicator');
+            if (indicator) {
+                indicator.textContent = `${Math.round(this.astZoom * 100)}%`;
+            }
+            
+            console.log(`🔍 Zoom AST: ${Math.round(this.astZoom * 100)}%`);
         }
     }
 
+    // Método mejorado para resetear zoom
     resetASTZoom() {
         const container = document.getElementById('astVisualization');
         const svg = container.querySelector('svg');
@@ -541,17 +808,65 @@ class ReportsManager {
         if (svg) {
             this.astZoom = 1;
             svg.style.transform = 'scale(1)';
+            
+            // Resetear scroll
+            const wrapper = container.querySelector('.ast-svg-wrapper');
+            if (wrapper) {
+                wrapper.scrollLeft = 0;
+                wrapper.scrollTop = 0;
+            }
+            
+            // Actualizar indicador
+            const indicator = container.querySelector('#ast-zoom-indicator');
+            if (indicator) {
+                indicator.textContent = '100%';
+            }
+            
+            console.log('🔄 Zoom AST reseteado');
+        }
+    }
+
+    // Método para auto-ajustar el AST al contenedor
+    fitASTToContainer() {
+        const container = document.getElementById('astVisualization');
+        const wrapper = container.querySelector('.ast-svg-wrapper');
+        const svg = container.querySelector('svg');
+        
+        if (!svg || !wrapper) return;
+        
+        try {
+            // Obtener dimensiones
+            const containerRect = wrapper.getBoundingClientRect();
+            const svgRect = svg.getBoundingClientRect();
+            
+            // Calcular factor de escala para que quepa
+            const scaleX = (containerRect.width - 40) / svgRect.width;
+            const scaleY = (containerRect.height - 40) / svgRect.height;
+            const scale = Math.min(scaleX, scaleY, 1); // No hacer zoom in, solo zoom out
+            
+            this.astZoom = scale;
+            svg.style.transform = `scale(${scale})`;
+            
+            // Actualizar indicador
+            const indicator = container.querySelector('#ast-zoom-indicator');
+            if (indicator) {
+                indicator.textContent = `${Math.round(scale * 100)}%`;
+            }
+            
+            console.log(`📐 AST ajustado al contenedor: ${Math.round(scale * 100)}%`);
+        } catch (error) {
+            console.warn('⚠️ Error ajustando AST:', error);
         }
     }
 
     expandAllAST() {
         // Por simplicidad, solo actualizamos el mensaje
-        console.log('Expandir todos los nodos');
+        console.log('📂 Expandir todos los nodos');
     }
 
     collapseAllAST() {
         // Por simplicidad, solo actualizamos el mensaje
-        console.log('Colapsar todos los nodos');
+        console.log('📁 Colapsar todos los nodos');
     }
 
     downloadAST(format) {
@@ -600,7 +915,6 @@ class ReportsManager {
         this.downloadBlob(blob, 'ast.json');
     }
 
-
     downloadASTPNG() {
         const container = document.getElementById('astVisualization');
         const svg = container.querySelector('svg');
@@ -610,28 +924,41 @@ class ReportsManager {
             return;
         }
 
-        // Crear canvas y convertir SVG a PNG
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const data = new XMLSerializer().serializeToString(svg);
-        
-        const img = new Image();
-        img.onload = () => {
-            canvas.width = img.width || 800;
-            canvas.height = img.height || 600;
+        try {
+            // Crear canvas y convertir SVG a PNG
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const scale = 2; // Factor de escala para alta resolución
             
-            // Fondo negro
-            ctx.fillStyle = '#1e1e1e';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Obtener dimensiones del SVG
+            const svgRect = svg.getBoundingClientRect();
+            canvas.width = svgRect.width * scale;
+            canvas.height = svgRect.height * scale;
             
-            ctx.drawImage(img, 0, 0);
+            // Serializar SVG
+            const data = new XMLSerializer().serializeToString(svg);
+            const img = new Image();
             
-            canvas.toBlob((blob) => {
-                this.downloadBlob(blob, 'ast.png');
-            });
-        };
-        
-        img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(data)));
+            img.onload = () => {
+                // Fondo oscuro
+                ctx.fillStyle = '#1e1e1e';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Escalar contexto
+                ctx.scale(scale, scale);
+                ctx.drawImage(img, 0, 0);
+                
+                // Descargar
+                canvas.toBlob((blob) => {
+                    this.downloadBlob(blob, 'ast-high-res.png');
+                });
+            };
+            
+            img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(data)));
+        } catch (error) {
+            console.error('Error exportando AST:', error);
+            alert('Error al exportar el AST');
+        }
     }
 
     // ==================== UTILIDADES ====================
@@ -719,6 +1046,10 @@ class ReportsManager {
     }
 }
 
+// ========================================
+// FUNCIONES GLOBALES DE UTILIDAD
+// ========================================
+
 // Función global para ordenar tablas
 function sortTable(tableId, columnIndex) {
     const table = document.getElementById(tableId);
@@ -769,3 +1100,112 @@ function sortTable(tableId, columnIndex) {
     // Reordenar filas
     rows.forEach(row => tbody.appendChild(row));
 }
+
+// Función para centrar el AST
+function centerAST() {
+    const container = document.getElementById('astVisualization');
+    const wrapper = container.querySelector('.ast-svg-wrapper');
+    
+    if (wrapper) {
+        wrapper.scrollLeft = (wrapper.scrollWidth - wrapper.clientWidth) / 2;
+        wrapper.scrollTop = (wrapper.scrollHeight - wrapper.clientHeight) / 2;
+    }
+}
+
+// Función para obtener estadísticas del AST
+function getASTStats() {
+    const container = document.getElementById('astVisualization');
+    const svg = container.querySelector('svg');
+    
+    if (!svg) return null;
+    
+    const nodes = svg.querySelectorAll('.node');
+    const links = svg.querySelectorAll('.link');
+    
+    return {
+        nodes: nodes.length,
+        links: links.length,
+        depth: calculateASTDepth(svg),
+        zoom: window.reportsManager?.astZoom || 1
+    };
+}
+
+// Función para calcular profundidad del AST
+function calculateASTDepth(svg) {
+    try {
+        const nodes = svg.querySelectorAll('.node');
+        let maxDepth = 0;
+        
+        nodes.forEach(node => {
+            const transform = node.getAttribute('transform');
+            if (transform) {
+                const yMatch = transform.match(/translate\([^,]+,\s*([^)]+)\)/);
+                if (yMatch) {
+                    const y = parseFloat(yMatch[1]);
+                    maxDepth = Math.max(maxDepth, y);
+                }
+            }
+        });
+        
+        return Math.ceil(maxDepth / 50); // Asumiendo 50px por nivel
+    } catch (error) {
+        return 0;
+    }
+}
+
+// Función para exportar AST como imagen de alta resolución
+function exportASTAsHighResImage() {
+    const container = document.getElementById('astVisualization');
+    const svg = container.querySelector('svg');
+    
+    if (!svg) {
+        alert('No hay AST para exportar');
+        return;
+    }
+    
+    try {
+        // Crear canvas con mayor resolución
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const scale = 3; // Factor de escala para alta resolución
+        
+        // Obtener dimensiones del SVG
+        const svgRect = svg.getBoundingClientRect();
+        canvas.width = svgRect.width * scale;
+        canvas.height = svgRect.height * scale;
+        
+        // Serializar SVG
+        const data = new XMLSerializer().serializeToString(svg);
+        const img = new Image();
+        
+        img.onload = () => {
+            // Fondo oscuro
+            ctx.fillStyle = '#1e1e1e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Escalar contexto
+            ctx.scale(scale, scale);
+            ctx.drawImage(img, 0, 0);
+            
+            // Descargar
+            canvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'ast-ultra-high-res.png';
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+        };
+        
+        img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(data)));
+    } catch (error) {
+        console.error('Error exportando AST:', error);
+        alert('Error al exportar el AST');
+    }
+}
+
+// Hacer las funciones disponibles globalmente
+window.centerAST = centerAST;
+window.getASTStats = getASTStats;
+window.exportASTAsHighResImage = exportASTAsHighResImage;
