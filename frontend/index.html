@@ -14,7 +14,7 @@
     <header class="ide-header">
         <div class="logo-section">
             <h1>🍒 VLan Cherry IDE</h1>
-            <span class="version">v1.0.0</span>
+            <span class="version">v3.1.0</span>
         </div>
         <div class="header-controls">
             <button id="newFileBtn" class="header-btn" title="Nuevo Archivo (Ctrl+N)">
@@ -105,14 +105,32 @@
             <div class="panel-header">
                 <h3>📟 Consola de Salida</h3>
                 <div class="panel-controls">
-                    <button id="showReportsBtn" class="panel-btn">📊 Ver Reportes</button>
-                    <button id="clearConsoleBtn" class="panel-btn">🗑️ Limpiar</button>
+                    <button id="showReportsBtn" class="panel-btn" title="Ver reportes detallados">
+                        📊 Reportes
+                    </button>
+                    <button id="clearConsoleBtn" class="panel-btn" title="Limpiar consola">
+                        🗑️ Limpiar
+                    </button>
                 </div>
             </div>
+            
+            <!-- Console Output Container -->
             <div class="console-output" id="consoleOutput">
-                <div class="console-message info">
+                <!-- Estado inicial -->
+                <div class="console-empty" id="consoleEmpty">
+                    <div class="console-empty-icon">📟</div>
+                    <p>Consola de VLan Cherry IDE</p>
+                    <small>Los mensajes de ejecución aparecerán aquí</small>
+                </div>
+                
+                <!-- Mensaje inicial -->
+                <div class="console-message system">
                     <span class="timestamp">[00:00:00]</span>
                     <span class="message">VLan Cherry IDE iniciado correctamente</span>
+                </div>
+                <div class="console-message info">
+                    <span class="timestamp">[00:00:00]</span>
+                    <span class="message">Conectando con el backend...</span>
                 </div>
             </div>
         </div>

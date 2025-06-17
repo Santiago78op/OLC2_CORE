@@ -4,9 +4,10 @@ class IDEController {
         this.editor = null;
         this.reportsManager = null;
         this.isConnected = false;
+        this.messageCounter = 0;
         this.init();
     }
-
+    
     init() {
         // Inicializar componentes
         this.fileManager = new FileManager();
@@ -133,12 +134,9 @@ class IDEController {
         if (result.success) {
             this.addConsoleMessage('✅ Ejecución completada exitosamente', 'success');
 
-            // Mostrar salida del programa
-            if (result.output && result.output.length > 0) {
-                // Si output es string, mostrarlo como un solo mensaje
-                this.addConsoleMessage(result.output, 'output');
-            }
-            // ...existing code...
+            // Mostrar salida del programa usando los nuevos formatos
+            this.displayProgramOutput(result);
+
             this.updateStatusMessage('Ejecución exitosa');
         } else {
             this.addConsoleMessage('❌ Ejecución falló con errores', 'error');
@@ -146,13 +144,20 @@ class IDEController {
             // Marcar errores en el editor
             if (result.errors && result.errors.length > 0) {
                 this.editor.markErrors(result.errors);
+                
+                // Mostrar resumen de errores
+                const errorSummary = this.formatErrorSummary(result.errorSummary);
+                this.addConsoleMessage(`Errores encontrados: ${errorSummary}`, 'error');
             }
 
             this.updateStatusMessage(`${result.errors?.length || 0} errores encontrados`);
         }
 
-        // Actualizar tiempo de ejecución
+        // Mostrar tiempo de ejecución
         document.getElementById('executionTime').textContent = `Tiempo: ${executionTime}ms`;
+        
+        // Agregar línea divisora
+        this.addConsoleDivider();
 
         // Actualizar reportes
         this.reportsManager.updateReports(result);
@@ -161,6 +166,116 @@ class IDEController {
         if (result.errors && result.errors.length > 0) {
             this.switchPanel('reports');
         }
+    }
+
+    displayProgramOutput(result) {
+        // Priorizar mensajes estructurados si están disponibles
+        if (result.consoleMessages && result.consoleMessages.length > 0) {
+            console.log('📤 Mostrando mensajes estructurados:', result.consoleMessages);
+            
+            result.consoleMessages.forEach(msg => {
+                this.addConsoleMessage(msg.content, this.mapConsoleMessageType(msg.type), msg.timestamp);
+            });
+        } else if (result.formattedOutput && result.formattedOutput.length > 0) {
+            // Usar output formateado si está disponible
+            console.log('📤 Mostrando output formateado');
+            this.displayFormattedOutput(result.formattedOutput);
+        } else if (result.output && result.output.length > 0) {
+            // Fallback al output plano pero procesado
+            console.log('📤 Mostrando output plano procesado');
+            this.displayPlainOutput(result.output);
+        }
+    }
+
+    displayFormattedOutput(formattedOutput) {
+        // Dividir por líneas y mostrar cada una
+        const lines = formattedOutput.split('\n');
+        
+        lines.forEach(line => {
+            if (line.trim()) { // Solo mostrar líneas no vacías
+                // Detectar tipo de mensaje por prefijo
+                let type = 'output';
+                let content = line;
+                
+                if (line.startsWith('❌')) {
+                    type = 'error';
+                    content = line.substring(2).trim();
+                } else if (line.startsWith('⚠️')) {
+                    type = 'warning';
+                    content = line.substring(2).trim();
+                } else if (line.startsWith('ℹ️')) {
+                    type = 'info';
+                    content = line.substring(2).trim();
+                }
+                
+                this.addConsoleMessage(content, type);
+            }
+        });
+    }
+
+    displayPlainOutput(plainOutput) {
+        // Procesar output plano para preservar saltos de línea
+        const lines = plainOutput.split('\n');
+        
+        lines.forEach((line, index) => {
+            // Mostrar líneas vacías solo si no es la última
+            if (line.trim() || index < lines.length - 1) {
+                this.addConsoleMessage(line || ' ', 'output');
+            }
+        });
+    }
+
+    mapConsoleMessageType(backendType) {
+        const typeMap = {
+            'output': 'output',
+            'error': 'error',
+            'info': 'info',
+            'warning': 'warning'
+        };
+        
+        return typeMap[backendType] || 'output';
+    }
+
+    formatErrorSummary(errorSummary) {
+        if (!errorSummary) return '0';
+        
+        const parts = [];
+        if (errorSummary.lexical) parts.push(`${errorSummary.lexical} léxicos`);
+        if (errorSummary.syntax) parts.push(`${errorSummary.syntax} sintácticos`);
+        if (errorSummary.semantic) parts.push(`${errorSummary.semantic} semánticos`);
+        if (errorSummary.runtime) parts.push(`${errorSummary.runtime} de ejecución`);
+        
+        return parts.length > 0 ? parts.join(', ') : '0';
+    }
+
+    addConsoleDivider() {
+        const consoleOutput = document.getElementById('consoleOutput');
+        const divider = document.createElement('div');
+        divider.className = 'console-divider';
+        consoleOutput.appendChild(divider);
+        consoleOutput.scrollTop = consoleOutput.scrollHeight;
+    }
+
+    showActivityIndicator() {
+        const consoleOutput = document.getElementById('consoleOutput');
+        
+        // Remover indicador anterior si existe
+        const existingIndicator = consoleOutput.querySelector('.console-activity-indicator');
+        if (existingIndicator) {
+            existingIndicator.remove();
+        }
+
+        // Agregar nuevo indicador
+        const indicator = document.createElement('div');
+        indicator.className = 'console-activity-indicator';
+        consoleOutput.appendChild(indicator);
+
+        // Remover después de 2 segundos
+        setTimeout(() => {
+            if (indicator.parentNode) {
+                indicator.remove();
+            }
+        }, 2000);
     }
 
     // Métodos de gestión de archivos
@@ -181,42 +296,122 @@ class IDEController {
     }
 
     // Gestión de consola
-    addConsoleMessage(message, type = 'info') {
+    addConsoleMessage(message, type = 'info', timestamp = null) {
         const consoleOutput = document.getElementById('consoleOutput');
-        const timestamp = new Date().toLocaleTimeString();
+        const messageTime = timestamp ? new Date(timestamp) : new Date();
+        const timeString = messageTime.toLocaleTimeString('es-ES', { 
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+
+        // Incrementar contador
+        this.messageCounter++;
 
         const messageElement = document.createElement('div');
         messageElement.className = `console-message ${type}`;
+        messageElement.setAttribute('data-message-id', this.messageCounter);
+        
+        // Escapar HTML pero preservar saltos de línea
+        const escapedMessage = this.escapeHtml(message);
+        
         messageElement.innerHTML = `
-            <span class="timestamp">[${timestamp}]</span>
-            <span class="message">${this.escapeHtml(message)}</span>
+            <span class="timestamp">[${timeString}]</span>
+            <span class="message">${escapedMessage}</span>
         `;
 
+        // Agregar efecto de entrada
+        messageElement.style.opacity = '0';
+        messageElement.style.transform = 'translateX(-10px)';
+        
         consoleOutput.appendChild(messageElement);
+
+        // Animar entrada
+        requestAnimationFrame(() => {
+            messageElement.style.transition = 'all 0.3s ease-out';
+            messageElement.style.opacity = '1';
+            messageElement.style.transform = 'translateX(0)';
+        });
+
+        // Auto-scroll al final
         consoleOutput.scrollTop = consoleOutput.scrollHeight;
 
-        // Limitar número de mensajes
+        // Limitar número de mensajes (mantener últimos 500)
         const messages = consoleOutput.children;
-        if (messages.length > 1000) {
-            consoleOutput.removeChild(messages[0]);
+        if (messages.length > 500) {
+            // Remover los primeros 50 mensajes
+            for (let i = 0; i < 50; i++) {
+                if (messages[0]) {
+                    consoleOutput.removeChild(messages[0]);
+                }
+            }
         }
+
+        // Agregar indicador de actividad temporal
+        this.showActivityIndicator();
     }
 
     clearConsole() {
         const consoleOutput = document.getElementById('consoleOutput');
         consoleOutput.innerHTML = '';
-        this.addConsoleMessage('Consola limpiada', 'info');
+        this.messageCounter = 0;
+        this.addConsoleMessage('🧹 Consola limpiada', 'system');
     }
 
     updateStatusMessage(message) {
         document.getElementById('statusMessage').textContent = message;
     }
 
+    // Método mejorado de escape HTML que preserva saltos de línea
     escapeHtml(text) {
+        if (typeof text !== 'string') {
+            text = String(text);
+        }
+        
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
     }
+
+    exportConsoleLog() {
+        const messages = document.querySelectorAll('.console-message');
+        const logContent = Array.from(messages).map(msg => {
+            const timestamp = msg.querySelector('.timestamp')?.textContent || '';
+            const message = msg.querySelector('.message')?.textContent || '';
+            const type = msg.className.split(' ').find(cls => cls !== 'console-message') || 'info';
+            
+            return `${timestamp} [${type.toUpperCase()}] ${message}`;
+        }).join('\n');
+
+        const blob = new Blob([logContent], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `vlancherry-log-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        this.addConsoleMessage('📄 Log de consola exportado', 'info');
+    }
+
+    getConsoleStats() {
+        const messages = document.querySelectorAll('.console-message');
+        const stats = {
+            total: messages.length,
+            info: document.querySelectorAll('.console-message.info').length,
+            success: document.querySelectorAll('.console-message.success').length,
+            warning: document.querySelectorAll('.console-message.warning').length,
+            error: document.querySelectorAll('.console-message.error').length,
+            output: document.querySelectorAll('.console-message.output').length,
+            system: document.querySelectorAll('.console-message.system').length
+        };
+
+        return stats;
+    }
+
 
     // Método para obtener estado del IDE
     getIDEState() {
