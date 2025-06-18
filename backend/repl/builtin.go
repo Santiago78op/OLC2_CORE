@@ -247,7 +247,6 @@ func TypeOf(context *ReplContext, args []*Argument) (value.IVOR, bool, string) {
 
 	argValue := args[0].Value
 
-	// Obtenemos el tipo directamente (ya es el nombre del tipo)
 	typeName := argValue.Type()
 
 	return &value.StringValue{
