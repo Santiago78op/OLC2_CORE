@@ -131,10 +131,6 @@ func (v *BaseVLangGrammarVisitor) VisitIncredecr(ctx *IncredecrContext) interfac
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseVLangGrammarVisitor) VisitStructAccessExpr(ctx *StructAccessExprContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
 func (v *BaseVLangGrammarVisitor) VisitBinaryExpr(ctx *BinaryExprContext) interface{} {
 	return v.VisitChildren(ctx)
 }

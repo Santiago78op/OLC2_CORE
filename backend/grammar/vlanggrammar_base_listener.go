@@ -206,12 +206,6 @@ func (s *BaseVLangGrammarListener) EnterIncredecr(ctx *IncredecrContext) {}
 // ExitIncredecr is called when production incredecr is exited.
 func (s *BaseVLangGrammarListener) ExitIncredecr(ctx *IncredecrContext) {}
 
-// EnterStructAccessExpr is called when production StructAccessExpr is entered.
-func (s *BaseVLangGrammarListener) EnterStructAccessExpr(ctx *StructAccessExprContext) {}
-
-// ExitStructAccessExpr is called when production StructAccessExpr is exited.
-func (s *BaseVLangGrammarListener) ExitStructAccessExpr(ctx *StructAccessExprContext) {}
-
 // EnterBinaryExpr is called when production BinaryExpr is entered.
 func (s *BaseVLangGrammarListener) EnterBinaryExpr(ctx *BinaryExprContext) {}
 
