@@ -244,15 +244,147 @@ func TypeOf(context *ReplContext, args []*Argument) (value.IVOR, bool, string) {
 	if len(args) != 1 {
 		return value.DefaultNilValue, false, "La función typeOf solo acepta un argumento"
 	}
-
 	argValue := args[0].Value
-
-	// Obtenemos el tipo directamente (ya es el nombre del tipo)
 	typeName := argValue.Type()
 
 	return &value.StringValue{
 		InternalValue: typeName,
 	}, true, ""
+}
+
+func IndexOf(context *ReplContext, args []*Argument) (value.IVOR, bool, string) {
+	if len(args) != 2 {
+		return value.DefaultNilValue, false, "La función indexOf requiere dos argumentos: un vector y un valor a buscar"
+	}
+
+	// Verificar que el primer argumento es un vector
+	vecArg, ok := args[0].Value.(*VectorValue)
+	if !ok {
+		return value.DefaultNilValue, false, "El primer argumento debe ser un vector"
+	}
+
+	searchValue := args[1].Value
+
+	// Recorrer el vector y comparar valores
+	for idx, item := range vecArg.InternalValue {
+		if item.Type() == searchValue.Type() && item.Value() == searchValue.Value() {
+			return &value.IntValue{InternalValue: idx}, true, ""
+		}
+	}
+	// No encontrado
+	return &value.IntValue{InternalValue: -1}, true, ""
+}
+
+func Join(context *ReplContext, args []*Argument) (value.IVOR, bool, string) {
+	if len(args) != 2 {
+		return value.DefaultNilValue, false, "La función join requiere dos argumentos: un vector de strings y un separador string o carácter"
+	}
+
+	vecArg, ok := args[0].Value.(*VectorValue)
+	if !ok {
+		return value.DefaultNilValue, false, "El primer argumento debe ser un vector"
+	}
+
+	separatorVal := args[1].Value
+
+	var separator string
+	switch separatorVal.Type() {
+	case value.IVOR_STRING:
+		separator = separatorVal.Value().(string)
+	case value.IVOR_CHARACTER:
+		separator = separatorVal.Value().(string)
+	default:
+		return value.DefaultNilValue, false, "El segundo argumento debe ser un string o un carácter"
+	}
+
+	// Validar que todos los elementos del vector sean strings
+	var parts []string
+	for _, item := range vecArg.InternalValue {
+		if item.Type() != value.IVOR_STRING {
+			return value.DefaultNilValue, false, "Todos los elementos del vector deben ser strings"
+		}
+		parts = append(parts, item.Value().(string))
+	}
+
+	result := strings.Join(parts, separator)
+
+	return &value.StringValue{
+		InternalValue: result,
+	}, true, ""
+}
+
+func Len(context *ReplContext, args []*Argument) (value.IVOR, bool, string) {
+	if len(args) != 1 {
+		return value.DefaultNilValue, false, "La función len requiere un solo argumento"
+	}
+
+	val := args[0].Value
+
+	raw := val.Value()
+
+	// referencia a vector
+	if ref, ok := raw.(*VectorItemReference); ok {
+		val = ref.Value
+	}
+
+	// referencia a matriz
+	if ref, ok := raw.(*MatrixItemReference); ok {
+		val = ref.Value
+	}
+
+	switch real := val.(type) {
+	case *VectorValue:
+		return &value.IntValue{
+			InternalValue: len(real.InternalValue),
+		}, true, ""
+
+	case *MatrixValue:
+		return &value.IntValue{
+			InternalValue: len(real.Items),
+		}, true, ""
+
+	default:
+		return value.DefaultNilValue, false, "La función len solo puede aplicarse a vectores o matrices"
+	}
+}
+
+func Append(context *ReplContext, args []*Argument) (value.IVOR, bool, string) {
+	if len(args) != 2 {
+		return value.DefaultNilValue, false, "La función append requiere dos argumentos"
+	}
+
+	target := args[0].Value
+	toAppend := args[1].Value
+
+	// Caso 1: target es vector
+	if vec, ok := target.(*VectorValue); ok {
+		newItems := make([]value.IVOR, len(vec.InternalValue))
+		copy(newItems, vec.InternalValue)
+
+		newItems = append(newItems, toAppend.Copy())
+		return NewVectorValue(newItems, vec.FullType, vec.ItemType), true, ""
+	}
+
+	// Caso 2: target es matriz (append fila nueva)
+	if matrix, ok := target.(*MatrixValue); ok {
+		rowVector, ok := toAppend.(*VectorValue)
+		if !ok {
+			return value.DefaultNilValue, false, "Para matrices, el segundo argumento debe ser un vector (una fila)"
+		}
+
+		if rowVector.ItemType != matrix.ItemType {
+			return value.DefaultNilValue, false, "Tipo incompatible: fila es de tipo " + rowVector.ItemType + ", matriz es de tipo " + matrix.ItemType
+		}
+		newItems := make([][]value.IVOR, len(matrix.Items))
+		for i := range matrix.Items {
+			newItems[i] = make([]value.IVOR, len(matrix.Items[i]))
+			copy(newItems[i], matrix.Items[i])
+		}
+		newItems = append(newItems, rowVector.InternalValue)
+		return NewMatrixValue(newItems, matrix.FullType, matrix.ItemType), true, ""
+	}
+
+	return value.DefaultNilValue, false, "El primer argumento debe ser un vector o matriz"
 }
 
 var DefaultBuiltInFunctions = map[string]*BuiltInFunction{
@@ -275,5 +407,21 @@ var DefaultBuiltInFunctions = map[string]*BuiltInFunction{
 	"TypeOf": {
 		Name: "TypeOf",
 		Exec: TypeOf,
+	},
+	"indexOf": {
+		Name: "indexOf",
+		Exec: IndexOf,
+	},
+	"join": {
+		Name: "join",
+		Exec: Join,
+	},
+	"len": {
+		Name: "len",
+		Exec: Len,
+	},
+	"append": {
+		Name: "append",
+		Exec: Append,
 	},
 }
