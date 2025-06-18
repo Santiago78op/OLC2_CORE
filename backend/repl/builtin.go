@@ -244,7 +244,10 @@ func TypeOf(context *ReplContext, args []*Argument) (value.IVOR, bool, string) {
 	if len(args) != 1 {
 		return value.DefaultNilValue, false, "La función typeOf solo acepta un argumento"
 	}
+
 	argValue := args[0].Value
+
+	// Obtenemos el tipo directamente (ya es el nombre del tipo)
 	typeName := argValue.Type()
 
 	return &value.StringValue{
@@ -287,6 +290,7 @@ func Join(context *ReplContext, args []*Argument) (value.IVOR, bool, string) {
 
 	separatorVal := args[1].Value
 
+
 	var separator string
 	switch separatorVal.Type() {
 	case value.IVOR_STRING:
@@ -319,6 +323,7 @@ func Len(context *ReplContext, args []*Argument) (value.IVOR, bool, string) {
 	}
 
 	val := args[0].Value
+
 
 	raw := val.Value()
 

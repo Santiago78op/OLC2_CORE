@@ -66,6 +66,7 @@ repeating:
 // Termina Declaracion Vectores
 
 // Inicia Declaracion de Vectores
+
 // [] int, [] float, [] String, [] bool
 vector_type: LBRACK RBRACK ID
     ;
