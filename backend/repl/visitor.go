@@ -473,8 +473,6 @@ func (v *ReplVisitor) VisitVectorItem(ctx *compiler.VectorItemContext) interface
 			v.ErrorTable.NewSemanticError(ctx.GetStart(), "Columna "+strconv.Itoa(j)+" fuera de rango")
 			return nil
 		}
-		valor := matrixValue.Items[i][j]
-		fmt.Printf("DEBUG: Retornando elemento matriz [%d][%d]: %v\n", i, j, valor)
 		return &MatrixItemReference{
 			Matrix: matrixValue,
 			Index:  []int{i, j},
