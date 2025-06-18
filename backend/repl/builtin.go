@@ -244,7 +244,9 @@ func TypeOf(context *ReplContext, args []*Argument) (value.IVOR, bool, string) {
 	if len(args) != 1 {
 		return value.DefaultNilValue, false, "La función typeOf solo acepta un argumento"
 	}
+
 	argValue := args[0].Value
+
 	typeName := argValue.Type()
 
 	return &value.StringValue{
