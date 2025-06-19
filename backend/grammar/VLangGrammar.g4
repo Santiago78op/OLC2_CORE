@@ -105,8 +105,8 @@ assign_stmt:
 
 // variable ASSIGN expression
 // num2 
-id_pattern // (a.a)
-    : ID (DOT ID)*                                # IdPattern
+id_pattern
+    : head=ID (DOT tail+=ID)*                     # IdPattern
     ;
 // Termina Asignacion de Variables
 
@@ -161,7 +161,6 @@ expression
     | left = expression op = AND right = expression  # BinaryExpr
     | left = expression op = OR right = expression   # BinaryExpr
     | ID LBRACE struct_param_list? RBRACE            # StructInstantiationExpr
-    | expression '.' ID                              # StructAccessExpr
     ;
 // Terminan Expresiones
 
@@ -228,7 +227,7 @@ func_param: ID type                        # FuncParam;
 strct_dcl: STR ID LBRACE struct_prop+ RBRACE # StructDecl;
 
 struct_prop:
-    type ID SEMI # StructAttr
+    type ID # StructAttr
 ;
 
 //struct_instantiation: ID LBRACE struct_param_list? RBRACE;

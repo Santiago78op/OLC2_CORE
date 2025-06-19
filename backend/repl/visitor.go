@@ -496,6 +496,40 @@ func (v *ReplVisitor) VisitAssignmentDecl(ctx *compiler.AssignmentDeclContext) i
 	fmt.Printf("   Valor: %v (tipo: %s)\n", varValue, varValue.Type())
 
 	// Buscar la variable en el scope
+	if strings.Contains(varName, ".") {
+		parts := strings.Split(varName, ".")
+		if len(parts) != 2 {
+			v.ErrorTable.NewSemanticError(ctx.GetStart(), "Asignación con acceso encadenado inválido: '"+varName+"'")
+			return nil
+		}
+		baseName := parts[0]
+		fieldName := parts[1]
+
+		baseVar := v.ScopeTrace.GetVariable(baseName)
+		if baseVar == nil {
+			v.ErrorTable.NewSemanticError(ctx.GetStart(), "Variable '"+baseName+"' no encontrada")
+			return nil
+		}
+
+		structVal, ok := baseVar.Value.(*value.StructValue)
+		if !ok {
+			v.ErrorTable.NewSemanticError(ctx.GetStart(), "Variable '"+baseName+"' no es un struct")
+			return nil
+		}
+
+		// Verifica si el campo existe
+		if _, exists := structVal.Instance.Fields[fieldName]; !exists {
+			v.ErrorTable.NewSemanticError(ctx.GetStart(), "El campo '"+fieldName+"' no existe en el struct '"+baseName+"'")
+			return nil
+		}
+
+		// Asignación
+		structVal.Instance.Fields[fieldName] = varValue
+		fmt.Printf("✅ Campo '%s' del struct '%s' actualizado a: %v\n", fieldName, baseName, varValue)
+		return nil
+	}
+
+	// Buscar la variable en el scope
 	variable := v.ScopeTrace.GetVariable(varName)
 
 	if variable == nil {
@@ -872,17 +906,46 @@ func (v *ReplVisitor) VisitDecremento(ctx *compiler.DecrementoContext) interface
 }
 
 func (v *ReplVisitor) VisitIdPatternExpr(ctx *compiler.IdPatternExprContext) interface{} {
-	varName := ctx.Id_pattern().GetText()
+	idCtx := ctx.Id_pattern().(*compiler.IdPatternContext)
 
+	// Extraer todos los IDs del acceso encadenado
+	ids := []string{idCtx.GetHead().GetText()}
+	for _, t := range idCtx.GetTail() {
+		ids = append(ids, t.GetText())
+	}
+
+	// Inicia la resolución
+	varName := ids[0]
 	variable := v.ScopeTrace.GetVariable(varName)
 
 	if variable == nil {
-		v.ErrorTable.NewSemanticError(ctx.GetStart(), "Variable "+varName+" no encontrada")
+		v.ErrorTable.NewSemanticError(ctx.GetStart(), "Variable '"+varName+"' no encontrada")
 		return value.DefaultNilValue
 	}
 
-	// ? pointer
-	return variable.Value
+	// Empieza con el valor de la variable
+	valueRef := variable.Value
+
+	for i := 1; i < len(ids); i++ {
+		attr := ids[i]
+
+		structVal, ok := valueRef.(*value.StructValue)
+		if !ok {
+			v.ErrorTable.NewSemanticError(ctx.GetStart(), "No se puede acceder a '"+attr+"' porque '"+ids[i-1]+"' no es un struct")
+			return value.DefaultNilValue
+		}
+
+		val, ok := structVal.Instance.Fields[attr]
+		if !ok {
+			v.ErrorTable.NewSemanticError(ctx.GetStart(), "El atributo '"+attr+"' no existe en el struct '"+structVal.Instance.StructName+"'")
+			return value.DefaultNilValue
+		}
+
+		// Actualiza el valor de referencia
+		valueRef = val
+	}
+
+	return valueRef
 }
 
 // Expresiones con parentesis
@@ -1767,30 +1830,6 @@ func (v *ReplVisitor) VisitStruct_param(ctx *compiler.Struct_paramContext) inter
 type StructFieldValue struct {
 	Name  string
 	Value value.IVOR
-}
-
-func (v *ReplVisitor) VisitStructAccessExpr(ctx *compiler.StructAccessExprContext) interface{} {
-	// Evaluar la expresión a la izquierda del punto (debería ser una variable o un acceso anidado)
-	left := v.Visit(ctx.Expression())
-
-	// Obtener el nombre del atributo accedido
-	attrName := ctx.ID().GetText()
-
-	// Validar que la expresión de la izquierda sea una instancia de struct
-	structVal, ok := left.(*value.StructValue)
-	if !ok {
-		v.ErrorTable.NewSemanticError(ctx.GetStart(), "La expresión no es una instancia de struct")
-		return nil
-	}
-
-	// Buscar el atributo en los campos del struct
-	attrVal, exists := structVal.Instance.Fields[attrName]
-	if !exists {
-		v.ErrorTable.NewSemanticError(ctx.GetStart(), "El atributo '"+attrName+"' no existe en el struct '"+structVal.Instance.StructName+"'")
-		return nil
-	}
-
-	return attrVal
 }
 
 // Declaracion de matrices

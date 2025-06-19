@@ -106,9 +106,6 @@ type VLangGrammarListener interface {
 	// EnterIncredecr is called when entering the incredecr production.
 	EnterIncredecr(c *IncredecrContext)
 
-	// EnterStructAccessExpr is called when entering the StructAccessExpr production.
-	EnterStructAccessExpr(c *StructAccessExprContext)
-
 	// EnterBinaryExpr is called when entering the BinaryExpr production.
 	EnterBinaryExpr(c *BinaryExprContext)
 
@@ -315,9 +312,6 @@ type VLangGrammarListener interface {
 
 	// ExitIncredecr is called when exiting the incredecr production.
 	ExitIncredecr(c *IncredecrContext)
-
-	// ExitStructAccessExpr is called when exiting the StructAccessExpr production.
-	ExitStructAccessExpr(c *StructAccessExprContext)
 
 	// ExitBinaryExpr is called when exiting the BinaryExpr production.
 	ExitBinaryExpr(c *BinaryExprContext)

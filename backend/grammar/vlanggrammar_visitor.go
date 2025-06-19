@@ -106,9 +106,6 @@ type VLangGrammarVisitor interface {
 	// Visit a parse tree produced by VLangGrammar#incredecr.
 	VisitIncredecr(ctx *IncredecrContext) interface{}
 
-	// Visit a parse tree produced by VLangGrammar#StructAccessExpr.
-	VisitStructAccessExpr(ctx *StructAccessExprContext) interface{}
-
 	// Visit a parse tree produced by VLangGrammar#BinaryExpr.
 	VisitBinaryExpr(ctx *BinaryExprContext) interface{}
 
