@@ -45,6 +45,12 @@ func IsMatrixType(typ string) bool {
 	return strings.HasPrefix(typ, "[[]]")
 }
 
+// Función auxiliar para verificar si es un struct
+func IsStructType(structValue value.IVOR) bool {
+	_, ok := structValue.(*value.StructValue)
+	return ok
+}
+
 func RemoveMatrixBrackets(typ string) string {
 	return strings.Replace(typ, "[[]]", "", 1)
 }

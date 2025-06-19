@@ -43,7 +43,10 @@ func PrintCore(context *ReplContext, args []*Argument, newLine bool) (value.IVOR
 	for i, arg := range args {
 
 		// Verificar si es un tipo primitivo O un vector
-		if !value.IsPrimitiveType(arg.Value.Type()) && !IsVectorType(arg.Value.Type()) && !IsMatrixType(arg.Value.Type()) {
+		if !value.IsPrimitiveType(arg.Value.Type()) &&
+			!IsVectorType(arg.Value.Type()) &&
+			!IsMatrixType(arg.Value.Type()) &&
+			!IsStructType(arg.Value) {
 			return value.DefaultNilValue, false, "La función print solo acepta tipos primitivos, vectores y matrices"
 		}
 
@@ -71,6 +74,9 @@ func PrintCore(context *ReplContext, args []*Argument, newLine bool) (value.IVOR
 			} else if IsMatrixType(arg.Value.Type()) {
 				matrixOutput := formatMatrix(arg.Value.(*MatrixValue))
 				output += matrixOutput
+			} else if structVal, ok := arg.Value.(*value.StructValue); ok {
+				structOutput := formatStruct(structVal)
+				output += structOutput
 			} else {
 				return value.DefaultNilValue, false, "Tipo no soportado para print: " + arg.Value.Type()
 			}
@@ -171,6 +177,57 @@ func formatVector(vector *VectorValue) string {
 	}
 
 	result.WriteString(" ]")
+	return result.String()
+}
+
+func formatStruct(structVal *value.StructValue) string {
+	if structVal == nil || structVal.Instance == nil {
+		return "nil"
+	}
+
+	var result strings.Builder
+	result.WriteString(structVal.Instance.StructName)
+	result.WriteString("{")
+
+	first := true
+	for fieldName, fieldValue := range structVal.Instance.Fields {
+		if !first {
+			result.WriteString(", ")
+		}
+		first = false
+
+		result.WriteString(fieldName)
+		result.WriteString(": ")
+
+		// Formatear el valor del campo según su tipo
+		switch fieldValue.Type() {
+		case value.IVOR_BOOL:
+			result.WriteString(strconv.FormatBool(fieldValue.Value().(bool)))
+		case value.IVOR_INT:
+			result.WriteString(strconv.Itoa(fieldValue.Value().(int)))
+		case value.IVOR_FLOAT:
+			result.WriteString(strconv.FormatFloat(fieldValue.Value().(float64), 'f', 4, 64))
+		case value.IVOR_STRING:
+			result.WriteString("\"" + fieldValue.Value().(string) + "\"")
+		case value.IVOR_CHARACTER:
+			result.WriteString("'" + fieldValue.Value().(string) + "'")
+		case value.IVOR_NIL:
+			result.WriteString("nil")
+		default:
+			// Para estructuras anidadas
+			if nestedStruct, ok := fieldValue.(*value.StructValue); ok {
+				result.WriteString(formatStruct(nestedStruct))
+			} else if IsVectorType(fieldValue.Type()) {
+				result.WriteString(formatVector(fieldValue.(*VectorValue)))
+			} else if IsMatrixType(fieldValue.Type()) {
+				result.WriteString(formatMatrix(fieldValue.(*MatrixValue)))
+			} else {
+				result.WriteString("[" + fieldValue.Type() + "]")
+			}
+		}
+	}
+
+	result.WriteString("}")
 	return result.String()
 }
 
